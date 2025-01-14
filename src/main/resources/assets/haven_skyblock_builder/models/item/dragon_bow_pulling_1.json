@@ -1,0 +1,6 @@
+{
+  "parent": "item/bow",
+  "textures": {
+    "layer0": "haven_skyblock_builder:item/dragon_bow_pulling_1"
+  }
+}

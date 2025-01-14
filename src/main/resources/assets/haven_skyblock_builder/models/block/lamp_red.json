@@ -1,0 +1,10 @@
+{
+    "parent": "haven_skyblock_builder:block/lamp_base",
+    "texture_size": [64, 64],
+    "textures": {
+        "0": "haven_skyblock_builder:block/lamp/glow_red",
+        "1": "haven_skyblock_builder:block/lamp/base",
+        "3": "haven_skyblock_builder:block/lamp/bars",
+        "particle": "haven_skyblock_builder:block/lamp/bars"
+    }
+}

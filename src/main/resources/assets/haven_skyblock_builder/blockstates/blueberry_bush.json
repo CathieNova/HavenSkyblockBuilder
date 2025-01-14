@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "age=0": { "model": "haven_skyblock_builder:block/bush_stage0" },
+    "age=1": { "model": "haven_skyblock_builder:block/bush_stage1" },
+    "age=2": { "model": "haven_skyblock_builder:block/blueberry_bush_stage2" },
+    "age=3": { "model": "haven_skyblock_builder:block/blueberry_bush_stage3" }
+  }
+}

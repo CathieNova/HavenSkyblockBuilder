@@ -1,0 +1,7 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "layer0": "haven_skyblock_builder:block/animalgrass",
+    "layer1": "minecraft:item/egg"
+  }
+}

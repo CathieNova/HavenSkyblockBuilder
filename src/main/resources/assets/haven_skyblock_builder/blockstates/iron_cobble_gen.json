@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "haven_skyblock_builder:block/iron_cobble_gen"
+    },
+    "facing=east": {
+      "model": "haven_skyblock_builder:block/iron_cobble_gen",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "haven_skyblock_builder:block/iron_cobble_gen",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "haven_skyblock_builder:block/iron_cobble_gen",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "facing=down": { "model": "haven_skyblock_builder:block/lamp_dark_purple", "x": 180 },
+        "facing=up": { "model": "haven_skyblock_builder:block/lamp_dark_purple" },
+        "facing=north": { "model": "haven_skyblock_builder:block/lamp_dark_purple", "x": 90 },
+        "facing=south": { "model": "haven_skyblock_builder:block/lamp_dark_purple", "x": 90, "y": 180 },
+        "facing=west": { "model": "haven_skyblock_builder:block/lamp_dark_purple", "x": 90, "y": 270 },
+        "facing=east": { "model": "haven_skyblock_builder:block/lamp_dark_purple", "x": 90, "y": 90 }
+    }
+}
