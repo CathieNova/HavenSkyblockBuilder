@@ -74,10 +74,17 @@ public class CommonConfig {
         builder.comment("Additional Structures").push("additional_structures");
         additionalStructures = builder
                 .comment("""
-    Additional structures to spawn for each island template.
-    Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
-    Example: ["skyblock_island=an_island,10,5,0"]
-    """)
+                Additional structures to spawn for each island template.
+                Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
+                Examples:
+                  - None: []
+                  - One: ["skyblock_island=an_island,10,5,0"]
+                  - Three: [
+                      "skyblock_island=an_island,10,5,0",
+                      "skyblock_island=second_island,15,10,5",
+                      "skyblock_island=third_island,-20,0,-10"
+                    ]
+                """)
                 .defineList("additional_structures",
                         List.of("skyblock_island=an_island,50,0,0"),
                         obj -> {
