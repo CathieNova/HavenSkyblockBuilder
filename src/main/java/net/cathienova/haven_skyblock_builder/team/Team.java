@@ -12,14 +12,16 @@ public class Team {
     private final UUID uuid;
     private String name;
     private UUID leader;
+    private boolean allowVisit;
     private BlockPos homePosition;
     private Vec2 homeRotation;
     private final List<Member> members = new ArrayList<>();
 
-    public Team(String name, UUID leader, BlockPos homePosition) {
+    public Team(String name, UUID leader, boolean allowVisit, BlockPos homePosition, Vec2 homeRotation) {
         this.uuid = UUID.randomUUID();
         this.name = name;
         this.leader = leader;
+        this.allowVisit = allowVisit;
         this.homePosition = homePosition;
         this.homeRotation = homeRotation;
     }
@@ -47,6 +49,14 @@ public class Team {
 
     public void setLeader(UUID leader) {
         this.leader = leader;
+    }
+
+    public boolean isAllowVisit() {
+        return allowVisit;
+    }
+
+    public void setAllowVisit(boolean allowVisit) {
+        this.allowVisit = allowVisit;
     }
 
     public BlockPos getHomePosition() {

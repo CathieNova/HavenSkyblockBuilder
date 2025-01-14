@@ -53,8 +53,12 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.player_not_found", prefix + "§cPlayer §6'§5%s§6' §cnot found.");
         add("haven_skyblock_builder.team.member_added", prefix + "§aPlayer §6'§5%s§6' added to team §6'§5%s§6'§a.");
         add("haven_skyblock_builder.team.member_removed", prefix + "§aPlayer §6'§5%s§6' removed from team §6'§5%s§6'§a.");
+        add("haven_skyblock_builder.team.invite_already_sent", prefix + "§cAn invitation has already been sent to §6'§5%s§6'§c.");
         add("haven_skyblock_builder.team.name_changed", prefix + "§aTeam name changed to §6'§5%s§6'§a.");
         add("haven_skyblock_builder.team.list_entry", "§6'§5%s§6' §a- Leader: §6'§5%s§6'§a, Members: %s");
+        add("haven_skyblock_builder.team.visit_disabled", prefix + "§cVisiting this island is disabled.");
+        add("haven_skyblock_builder.team.visit_teleport", prefix + "§aTeleported to §6'§5%s§6'§a's island.");
+        add("haven_skyblock_builder.team.cannot_kick_leader", prefix + "§cYou cannot kick the team leader.");
 
         add("haven_skyblock_builder.reload", prefix + "§aConfig reloaded.");
     }

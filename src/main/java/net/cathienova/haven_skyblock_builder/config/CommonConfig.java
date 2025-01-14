@@ -2,23 +2,19 @@ package net.cathienova.haven_skyblock_builder.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class CommonConfig {
-    public final ModConfigSpec.ConfigValue<String> islandTemplate;
     public final ModConfigSpec.ConfigValue<Integer> islandCreationHeight;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnOffset;
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
+    public final ModConfigSpec.ConfigValue<List<? extends String>> spawnPosition;
+    public final ModConfigSpec.ConfigValue<List<? extends String>> additionalStructures;
 
     public CommonConfig(ModConfigSpec.Builder builder) {
-        builder.comment("Island Settings").push("island_settings");
-        builder.comment("Island Template").push("island_template");
-        islandTemplate = builder
-                .comment("The name of the island template to  located in \"config/HavenSkyblockBuilder/templates\"")
-                .define("skyblock_island", "skyblock_island");
-        builder.pop();
-
         builder.comment("Island Creation Height").push("island_creation_height");
         islandCreationHeight = builder
                 .comment("The height at which the island will be created")
@@ -55,6 +51,58 @@ public class CommonConfig {
                 .comment("The distance between each island")
                 .defineInRange("island_offset", 2000, 1, Integer.MAX_VALUE);
         builder.pop();
+
+        builder.comment("World Spawn Position").push("spawn_position");
+        spawnPosition = builder
+                .comment("""
+                The X, Y, Z coordinates of the world spawn position.
+                Example: ["0", "71", "0"] (Default spawn at 0, 70, 0).
+                """)
+                .defineList("spawn_position", List.of("0", "71", "0"), obj -> {
+                    if (!(obj instanceof String)) {
+                        return false;
+                    }
+                    try {
+                        Integer.parseInt((String) obj);
+                        return true;
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+                });
         builder.pop();
+
+        builder.comment("Additional Structures").push("additional_structures");
+        additionalStructures = builder
+                .comment("""
+    Additional structures to spawn for each island template.
+    Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
+    Example: ["skyblock_island=an_island,10,5,0"]
+    """)
+                .defineList("additional_structures",
+                        List.of("skyblock_island=an_island,50,0,0"),
+                        obj -> {
+                            if (!(obj instanceof String)) {
+                                return false;
+                            }
+                            String value = (String) obj;
+                            String[] parts = value.split("=");
+                            if (parts.length != 2) {
+                                return false;
+                            }
+                            String[] offsets = parts[1].split(",");
+                            if (offsets.length != 4) {
+                                return false;
+                            }
+                            try {
+                                Integer.parseInt(offsets[1]);
+                                Integer.parseInt(offsets[2]);
+                                Integer.parseInt(offsets[3]);
+                                return true;
+                            } catch (NumberFormatException e) {
+                                return false;
+                            }
+                        });
+        builder.pop();
+
     }
 }

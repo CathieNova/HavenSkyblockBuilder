@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import net.cathienova.haven_skyblock_builder.config.HavenConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.File;
@@ -122,22 +123,50 @@ public class TeamManager {
         return teams.get(teamId);
     }
 
-    public static BlockPos findNextAvailableIslandPosition(int offset) {
-        int x = 0, z = 0;
+    public static BlockPos findNextAvailableIslandPosition(ServerLevel level) {
+        int layer = 1;
+        int islandDistance = HavenConfig.islandDistance;
+        int checkRadius = 50;
+
         while (true) {
-            BlockPos candidate = new BlockPos(x, 70, z);
-            if (isPositionAvailable(candidate, HavenConfig.islandDistance)) {
-                return candidate;
+            for (int x = -layer * islandDistance; x <= layer * islandDistance; x += islandDistance) {
+                for (int z = -layer * islandDistance; z <= layer * islandDistance; z += islandDistance) {
+                    if (Math.abs(x) != layer * islandDistance && Math.abs(z) != layer * islandDistance) {
+                        continue;
+                    }
+
+                    BlockPos candidate = new BlockPos(x, 70, z);
+
+                    if (candidate.equals(new BlockPos(0, 70, 0))) {
+                        continue;
+                    }
+
+                    if (isPositionAvailable(candidate, islandDistance) && noNearbyBlocks(level, candidate, checkRadius)) {
+                        return candidate;
+                    }
+                }
             }
-            x += offset;
-            if (x > 1000000) { // Prevent infinite loops
-                x = 0;
-                z += offset;
-            }
-            if (z > 1000000) {
-                return null; // No available position found
+
+            layer++;
+            if (layer > 1000) {
+                return null;
             }
         }
+    }
+
+    // Helper method to check if there are blocks nearby
+    private static boolean noNearbyBlocks(ServerLevel level, BlockPos center, int radius) {
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    BlockPos pos = center.offset(dx, dy, dz);
+                    if (!level.isEmptyBlock(pos)) {
+                        return false; // Found a non-air block nearby
+                    }
+                }
+            }
+        }
+        return true; // No blocks found nearby
     }
 
     private static boolean isPositionAvailable(BlockPos position, int radius) {

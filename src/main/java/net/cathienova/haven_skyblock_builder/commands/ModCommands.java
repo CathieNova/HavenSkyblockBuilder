@@ -7,71 +7,50 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder;
-import net.cathienova.haven_skyblock_builder.config.HavenConfig;
 import net.cathienova.haven_skyblock_builder.team.Team;
 import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.cathienova.haven_skyblock_builder.util.SkyblockUtils;
-import net.cathienova.haven_skyblock_builder.util.TemplateUtil;
-import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderGetter;
-import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtAccounter;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 public class ModCommands
 {
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
+    {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("havensb");
 
         // Island-based commands
         LiteralArgumentBuilder<CommandSourceStack> island = Commands.literal("island");
         island.then(Commands.literal("create")
-                .executes(context -> {
+                .executes(context ->
+                {
                     context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_island"));
                     return 0;
                 })
                 .then(Commands.argument("template", StringArgumentType.word())
                         .suggests(ModCommands::suggestIslandTemplates)
-                        .executes(context -> {
+                        .executes(context ->
+                        {
                             context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_name"));
                             return 0;
                         })
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .executes(SkyblockUtils::createTeam))));
-        island.then(Commands.literal("leave").executes(SkyblockUtils::leaveTeam));
-        island.then(Commands.literal("disband").executes(SkyblockUtils::disbandTeam));
         island.then(Commands.literal("home").executes(SkyblockUtils::goHome));
         island.then(Commands.literal("sethome").executes(SkyblockUtils::setHome));
         island.then(Commands.literal("list").executes(SkyblockUtils::listTeams));
+        island.then(Commands.literal("visit")
+                .then(Commands.argument("team", StringArgumentType.word())
+                        .suggests(ModCommands::suggestTeams)
+                        .executes(SkyblockUtils::visitIsland)));
         command.then(island);
 
         // Team-based commands
@@ -80,6 +59,10 @@ public class ModCommands
                 .then(Commands.argument("player", EntityArgument.player())
                         .suggests(ModCommands::suggestOnlinePlayers)
                         .executes(SkyblockUtils::invitePlayer)));
+        team.then(Commands.literal("allowvisit")
+                .then(Commands.argument("allow", StringArgumentType.string())
+                        .suggests(ModCommands::suggestStates)
+                        .executes(SkyblockUtils::setAllowVisit)));
         team.then(Commands.literal("accept").executes(SkyblockUtils::acceptInvite));
         team.then(Commands.literal("deny").executes(SkyblockUtils::denyInvite));
         team.then(Commands.literal("kick")
@@ -90,10 +73,15 @@ public class ModCommands
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(ModCommands::suggestTeamMembers)
                         .executes(SkyblockUtils::transferLeadership)));
+        team.then(Commands.literal("leave")
+                .executes(SkyblockUtils::leaveTeam));
+        team.then(Commands.literal("disband")
+                .executes(SkyblockUtils::disbandTeam));
         command.then(team);
 
         // Admin commands
         LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin");
+        admin.requires(source -> source.hasPermission(2));
         admin.then(Commands.literal("reload")
                 .executes(ModCommands::reloadConfig));
         admin.then(Commands.literal("addmember")
@@ -183,6 +171,12 @@ public class ModCommands
         return builder.buildFuture();
     }
 
+    public static CompletableFuture<Suggestions> suggestStates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
+    {
+        builder.suggest("true");
+        builder.suggest("false");
+        return builder.buildFuture();
+    }
 
     private static int reloadConfig(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
