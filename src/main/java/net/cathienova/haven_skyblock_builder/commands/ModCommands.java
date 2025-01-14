@@ -87,6 +87,7 @@ public class ModCommands
         leader.then(Commands.literal(("changename"))
                 .then(Commands.argument("name", StringArgumentType.word())
                         .executes(SkyblockUtils::changeTeamName)));
+        command.then(leader);
 
         // Admin commands
         LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin");

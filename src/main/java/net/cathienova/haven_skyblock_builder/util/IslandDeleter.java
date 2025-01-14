@@ -7,51 +7,68 @@ import net.minecraft.world.level.block.Blocks;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-// Somehow i can't get this to delete the island area...
 
 public class IslandDeleter {
     private static final Queue<BlockPos> blocksToClear = new ArrayDeque<>();
-    private static final int BLOCKS_PER_TICK = 10;
-    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private static final int CLEARING_PERIOD = 100;
+    private static final int BLOCKS_PER_TICK = 100;
+    private static final Queue<BlockPos> pendingPopulation = new ArrayDeque<>();
 
+    // This method causes lag but it works, it has to be improved later on..
     public static void deleteIslandArea(ServerLevel level, BlockPos teamCenter) {
         int radius = 250;
-        blocksToClear.clear();
-        HavenSkyblockBuilder.Log("Clearing island area around " + teamCenter + " with radius " + radius);
+
+        HavenSkyblockBuilder.Log("Preparing to delete island area around " + teamCenter + " with radius " + radius);
+        populateBlocksQueueAsync(level, teamCenter, radius, level.getMinBuildHeight(), level.getMaxBuildHeight());
+    }
+
+    private static void populateBlocksQueueAsync(ServerLevel level, BlockPos center, int radius, int minHeight, int maxHeight) {
+        pendingPopulation.clear();
 
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 if (x * x + z * z <= radius * radius) {
-                    for (int y = level.getMinBuildHeight(); y <= level.getMaxBuildHeight(); y++) {
-                        BlockPos pos = teamCenter.offset(x, y - teamCenter.getY(), z);
-                        blocksToClear.add(pos);
+                    for (int y = minHeight; y <= maxHeight; y++) {
+                        pendingPopulation.add(new BlockPos(center.getX() + x, y, center.getZ() + z));
                     }
                 }
             }
         }
-        HavenSkyblockBuilder.Log("Blocks queued for deletion: " + blocksToClear.size());
 
-        // Schedule the clearing task
-        executor.scheduleAtFixedRate(() -> clearBlocks(level), 0, CLEARING_PERIOD, TimeUnit.MILLISECONDS);
+        level.getServer().execute(() -> populateQueueIncrementally(level));
     }
 
-    private static void clearBlocks(ServerLevel level) {
-        if (blocksToClear.isEmpty()) {
-            HavenSkyblockBuilder.Log("All blocks cleared.");
-            executor.shutdown();
-            return;
+    private static void populateQueueIncrementally(ServerLevel level) {
+        int processed = 0;
+
+        while (processed < BLOCKS_PER_TICK && !pendingPopulation.isEmpty()) {
+            blocksToClear.add(pendingPopulation.poll());
+            processed++;
         }
 
-        for (int i = 0; i < BLOCKS_PER_TICK && !blocksToClear.isEmpty(); i++) {
-            BlockPos pos = blocksToClear.poll();
-            if (pos != null && level.isLoaded(pos) && !level.isEmptyBlock(pos)) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-            }
+        if (!pendingPopulation.isEmpty()) {
+            level.getServer().execute(() -> populateQueueIncrementally(level));
+        } else {
+            HavenSkyblockBuilder.Log("Block queue population completed. Starting deletion...");
+            scheduleDeletion(level);
         }
+    }
+
+    private static void scheduleDeletion(ServerLevel level) {
+        level.getServer().execute(() -> {
+            int processed = 0;
+            while (processed < BLOCKS_PER_TICK && !blocksToClear.isEmpty()) {
+                BlockPos pos = blocksToClear.poll();
+                if (pos != null) {
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    processed++;
+                }
+            }
+
+            if (!blocksToClear.isEmpty()) {
+                scheduleDeletion(level);
+            } else {
+                HavenSkyblockBuilder.Log("Island area deletion completed.");
+            }
+        });
     }
 }

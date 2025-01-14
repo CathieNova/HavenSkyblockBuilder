@@ -284,14 +284,12 @@ public class SkyblockUtils
 
         if (team.getMembers().isEmpty())
         {
-            /*if (team.getHomePosition() != null)
-            {
-                IslandDeleter.deleteIslandArea(level, team.getHomePosition());
-            }*/
             TeamManager.removeTeam(level.getServer(), team.getUuid());
             context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
             int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
             player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
+            IslandDeleter.deleteIslandArea(level, team.getHomePosition());
+            return 1;
         }
         else
         {
@@ -302,6 +300,7 @@ public class SkyblockUtils
                 if (newLeader != null)
                     newLeader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.new_leader", team.getName()));
                 context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.leader_change", team.getLeaderName()), true);
+                return 1;
             }
         }
         return 1;
@@ -341,7 +340,7 @@ public class SkyblockUtils
 
         TeamManager.removeTeam(level.getServer(), team.getUuid());
         context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
-        //IslandDeleter.deleteIslandArea(level, homePosition);
+        IslandDeleter.deleteIslandArea(level, homePosition);
         return 1;
     }
 
@@ -772,15 +771,12 @@ public class SkyblockUtils
         {
             if (team.getMembers().isEmpty())
             {
-                /*if (team.getHomePosition() != null)
-                {
-                    IslandDeleter.deleteIslandArea(level, team.getHomePosition());
-                }*/
                 TeamManager.removeTeam(level.getServer(), team.getUuid());
                 int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
                 player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
                 context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
 
+                IslandDeleter.deleteIslandArea(level, team.getHomePosition());
                 return 1;
             }
 
