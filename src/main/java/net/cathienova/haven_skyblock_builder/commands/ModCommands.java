@@ -46,38 +46,47 @@ public class ModCommands
                                 .executes(SkyblockUtils::createTeam))));
         island.then(Commands.literal("home").executes(SkyblockUtils::goHome));
         island.then(Commands.literal("sethome").executes(SkyblockUtils::setHome));
-        island.then(Commands.literal("list").executes(SkyblockUtils::listTeams));
-        island.then(Commands.literal("visit")
-                .then(Commands.argument("team", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeams)
-                        .executes(SkyblockUtils::visitIsland)));
         command.then(island);
 
         // Team-based commands
         LiteralArgumentBuilder<CommandSourceStack> team = Commands.literal("team");
+        team.then(Commands.literal("list").executes(SkyblockUtils::listTeams));
         team.then(Commands.literal("invite")
                 .then(Commands.argument("player", EntityArgument.player())
                         .suggests(ModCommands::suggestOnlinePlayers)
                         .executes(SkyblockUtils::invitePlayer)));
-        team.then(Commands.literal("allowvisit")
-                .then(Commands.argument("allow", StringArgumentType.string())
-                        .suggests(ModCommands::suggestStates)
-                        .executes(SkyblockUtils::setAllowVisit)));
         team.then(Commands.literal("accept").executes(SkyblockUtils::acceptInvite));
         team.then(Commands.literal("deny").executes(SkyblockUtils::denyInvite));
-        team.then(Commands.literal("kick")
+        team.then(Commands.literal("leave")
+                .executes(SkyblockUtils::leaveTeam));
+        team.then(Commands.literal("boot")
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(ModCommands::suggestOnlinePlayers)
+                        .executes(SkyblockUtils::deportPlayer)));
+        team.then(Commands.literal("visit")
+                .then(Commands.argument("team", StringArgumentType.word())
+                        .suggests(ModCommands::suggestTeams)
+                        .executes(SkyblockUtils::visitIsland)));
+        command.then(team);
+
+        LiteralArgumentBuilder<CommandSourceStack> leader = Commands.literal("leader");
+        leader.then(Commands.literal("disband")
+                .executes(SkyblockUtils::disbandTeam));
+        leader.then(Commands.literal("kick")
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(ModCommands::suggestTeamMembers)
                         .executes(SkyblockUtils::kickPlayer)));
-        team.then(Commands.literal("transfer")
+        leader.then(Commands.literal("transfer")
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(ModCommands::suggestTeamMembers)
                         .executes(SkyblockUtils::transferLeadership)));
-        team.then(Commands.literal("leave")
-                .executes(SkyblockUtils::leaveTeam));
-        team.then(Commands.literal("disband")
-                .executes(SkyblockUtils::disbandTeam));
-        command.then(team);
+        leader.then(Commands.literal("allowvisit")
+                .then(Commands.argument("allow", StringArgumentType.string())
+                        .suggests(ModCommands::suggestStates)
+                        .executes(SkyblockUtils::setAllowVisit)));
+        leader.then(Commands.literal(("changename"))
+                .then(Commands.argument("name", StringArgumentType.word())
+                        .executes(SkyblockUtils::changeTeamName)));
 
         // Admin commands
         LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin");
@@ -100,7 +109,7 @@ public class ModCommands
                 .then(Commands.argument("team", StringArgumentType.word())
                         .suggests(ModCommands::suggestTeams)
                         .then(Commands.argument("name", StringArgumentType.word())
-                                .executes(SkyblockUtils::changeName))));
+                                .executes(SkyblockUtils::adminChangeTeamName))));
         command.then(admin);
 
         dispatcher.register(command);

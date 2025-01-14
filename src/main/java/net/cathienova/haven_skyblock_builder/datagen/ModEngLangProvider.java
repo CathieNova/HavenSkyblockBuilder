@@ -59,6 +59,14 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.visit_disabled", prefix + "§cVisiting this island is disabled.");
         add("haven_skyblock_builder.team.visit_teleport", prefix + "§aTeleported to §6'§5%s§6'§a's island.");
         add("haven_skyblock_builder.team.cannot_kick_leader", prefix + "§cYou cannot kick the team leader.");
+        add("haven_skyblock_builder.admin.no_permission", prefix + "§cYou do not have permission to use this command.");
+
+        add("haven_skyblock_builder.team.cannot_boot_team_member", prefix + "§cYou cannot boot a member of your own team.");
+        add("haven_skyblock_builder.team.not_near_island", prefix + "§cThe player is not near your island.");
+        add("haven_skyblock_builder.team.booted_to_own_island", prefix + "§cYou have been deported to your own island.");
+        add("haven_skyblock_builder.team.booted_to_spawn", prefix + "§cYou have been deported to the spawn area.");
+        add("haven_skyblock_builder.team.boot_success", prefix + "§aPlayer §6'§5%s§6' §ahas been deported from the island.");
+
 
         add("haven_skyblock_builder.reload", prefix + "§aConfig reloaded.");
     }
