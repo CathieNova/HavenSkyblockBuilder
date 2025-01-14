@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-public class IslandDeleter {
+public class IslandManager {
     private static final Queue<BlockPos> blocksToClear = new ArrayDeque<>();
     private static final int BLOCKS_PER_TICK = 100;
     private static final Queue<BlockPos> pendingPopulation = new ArrayDeque<>();

@@ -36,7 +36,7 @@ public class ModCommands
                     return 0;
                 })
                 .then(Commands.argument("template", StringArgumentType.word())
-                        .suggests(ModCommands::suggestIslandTemplates)
+                        .suggests(CommandSuggestions::suggestIslandTemplates)
                         .executes(context ->
                         {
                             context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_name"));
@@ -53,7 +53,7 @@ public class ModCommands
         team.then(Commands.literal("list").executes(SkyblockUtils::listTeams));
         team.then(Commands.literal("invite")
                 .then(Commands.argument("player", EntityArgument.player())
-                        .suggests(ModCommands::suggestOnlinePlayers)
+                        .suggests(CommandSuggestions::suggestOnlinePlayers)
                         .executes(SkyblockUtils::invitePlayer)));
         team.then(Commands.literal("accept").executes(SkyblockUtils::acceptInvite));
         team.then(Commands.literal("deny").executes(SkyblockUtils::denyInvite));
@@ -61,11 +61,11 @@ public class ModCommands
                 .executes(SkyblockUtils::leaveTeam));
         team.then(Commands.literal("boot")
                 .then(Commands.argument("player", StringArgumentType.word())
-                        .suggests(ModCommands::suggestOnlinePlayers)
+                        .suggests(CommandSuggestions::suggestOnlinePlayers)
                         .executes(SkyblockUtils::deportPlayer)));
         team.then(Commands.literal("visit")
                 .then(Commands.argument("team", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeams)
+                        .suggests(CommandSuggestions::suggestTeams)
                         .executes(SkyblockUtils::visitIsland)));
         command.then(team);
 
@@ -74,15 +74,15 @@ public class ModCommands
                 .executes(SkyblockUtils::disbandTeam));
         leader.then(Commands.literal("kick")
                 .then(Commands.argument("player", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeamMembers)
+                        .suggests(CommandSuggestions::suggestTeamMembers)
                         .executes(SkyblockUtils::kickPlayer)));
         leader.then(Commands.literal("transfer")
                 .then(Commands.argument("player", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeamMembers)
+                        .suggests(CommandSuggestions::suggestTeamMembers)
                         .executes(SkyblockUtils::transferLeadership)));
         leader.then(Commands.literal("allowvisit")
                 .then(Commands.argument("allow", StringArgumentType.string())
-                        .suggests(ModCommands::suggestStates)
+                        .suggests(CommandSuggestions::suggestStates)
                         .executes(SkyblockUtils::setAllowVisit)));
         leader.then(Commands.literal(("changename"))
                 .then(Commands.argument("name", StringArgumentType.word())
@@ -96,96 +96,24 @@ public class ModCommands
                 .executes(ModCommands::reloadConfig));
         admin.then(Commands.literal("addmember")
                 .then(Commands.argument("team", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeams)
+                        .suggests(CommandSuggestions::suggestTeams)
                         .then(Commands.argument("player", StringArgumentType.word())
-                                .suggests(ModCommands::suggestPlayers)
+                                .suggests(CommandSuggestions::suggestPlayers)
                                 .executes(SkyblockUtils::addMember))));
         admin.then(Commands.literal("removemember")
                 .then(Commands.argument("team", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeams)
+                        .suggests(CommandSuggestions::suggestTeams)
                         .then(Commands.argument("player", StringArgumentType.word())
-                                .suggests(ModCommands::suggestTeamMembers)
+                                .suggests(CommandSuggestions::suggestTeamMembers)
                                 .executes(SkyblockUtils::removeMember))));
         admin.then(Commands.literal("changename")
                 .then(Commands.argument("team", StringArgumentType.word())
-                        .suggests(ModCommands::suggestTeams)
+                        .suggests(CommandSuggestions::suggestTeams)
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .executes(SkyblockUtils::adminChangeTeamName))));
         command.then(admin);
 
         dispatcher.register(command);
-    }
-
-    public static CompletableFuture<Suggestions> suggestOnlinePlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
-        return CompletableFuture.supplyAsync(() ->
-        {
-            context.getSource().getServer().getPlayerList().getPlayers().stream()
-                    .map(player -> player.getName().getString())
-                    .filter(name -> name.startsWith(builder.getRemaining()))
-                    .forEach(builder::suggest);
-            return builder.build();
-        });
-    }
-
-    public static CompletableFuture<Suggestions> suggestPlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
-        return CompletableFuture.supplyAsync(() ->
-        {
-            context.getSource().getServer().getPlayerList().getPlayers().stream()
-                    .map(player -> player.getName().getString())
-                    .filter(name -> name.startsWith(builder.getRemaining()))
-                    .forEach(builder::suggest);
-            return builder.build();
-        });
-    }
-
-    public static CompletableFuture<Suggestions> suggestTeamMembers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException
-    {
-        ServerPlayer leader = context.getSource().getPlayerOrException();
-        Team team = TeamManager.getTeamByPlayer(leader.getUUID());
-
-        if (team != null)
-        {
-            team.getMemberNames().stream()
-                    .filter(name -> name.startsWith(builder.getRemaining()))
-                    .forEach(builder::suggest);
-        }
-
-        return builder.buildFuture();
-    }
-
-    public static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
-        TeamManager.getAllTeams().stream()
-                .map(Team::getName)
-                .filter(name -> name.startsWith(builder.getRemaining()))
-                .forEach(builder::suggest);
-
-        return builder.buildFuture();
-    }
-
-    public static CompletableFuture<Suggestions> suggestIslandTemplates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        File templatesFolder = new File("config/HavenSkyblockBuilder/Templates"); // Define the folder path relative to the server directory
-
-        if (templatesFolder.exists() && templatesFolder.isDirectory()) {
-            File[] files = templatesFolder.listFiles((dir, name) -> name.endsWith(".nbt")); // Filter NBT files
-            if (files != null) {
-                for (File file : files) {
-                    String templateName = file.getName().replace(".nbt", ""); // Remove ".nbt" extension
-                    builder.suggest(templateName); // Add each template to suggestions
-                }
-            }
-        }
-
-        return builder.buildFuture();
-    }
-
-    public static CompletableFuture<Suggestions> suggestStates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
-        builder.suggest("true");
-        builder.suggest("false");
-        return builder.buildFuture();
     }
 
     private static int reloadConfig(CommandContext<CommandSourceStack> context) throws CommandSyntaxException

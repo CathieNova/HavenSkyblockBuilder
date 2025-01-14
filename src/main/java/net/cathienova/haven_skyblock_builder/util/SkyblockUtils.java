@@ -35,81 +35,6 @@ import java.util.*;
 
 public class SkyblockUtils
 {
-    private static StructureTemplate spawnStructure(ServerLevel level, BlockPos position, String islandTemplate)
-    {
-        StructureTemplate template;
-
-        File structureFile = new File("config/HavenSkyblockBuilder/Templates", islandTemplate + ".nbt");
-        File parentDirectory = structureFile.getParentFile();
-        Path structurePath = parentDirectory.toPath().resolve(structureFile.getName());
-
-        try
-        {
-            CompoundTag nbtData = NbtIo.readCompressed(structurePath, NbtAccounter.unlimitedHeap());
-
-            template = new StructureTemplate();
-            HolderGetter<Block> blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK).asLookup();
-            template.load(blockRegistry, nbtData);
-
-            StructurePlaceSettings settings = new StructurePlaceSettings();
-            template.placeInWorld(level, position, position, settings, null, 3);
-            spawnAdditionalStructures(level, position, islandTemplate);
-        } catch (Exception e)
-        {
-            HavenSkyblockBuilder.Log("Error loading custom structure: " + e.getMessage());
-            throw new RuntimeException("Failed to load structure from custom path: " + structurePath, e);
-        }
-
-        return template;
-    }
-
-    private static void spawnAdditionalStructures(ServerLevel level, BlockPos position, String islandTemplate) {
-        List<? extends String> additionalStructures = HavenConfig.additionalStructures;
-        if (additionalStructures != null) {
-            for (String entry : additionalStructures) {
-                String[] parts = entry.split("=");
-                if (parts.length != 2 || !parts[0].equals(islandTemplate)) {
-                    continue;
-                }
-
-                String[] structureParts = parts[1].split(",");
-                if (structureParts.length != 4) {
-                    HavenSkyblockBuilder.Log("Invalid structure entry: " + entry);
-                    continue;
-                }
-
-                String structureName = structureParts[0];
-                int xOffset, yOffset, zOffset;
-                try {
-                    xOffset = Integer.parseInt(structureParts[1]);
-                    yOffset = Integer.parseInt(structureParts[2]);
-                    zOffset = Integer.parseInt(structureParts[3]);
-                } catch (NumberFormatException e) {
-                    HavenSkyblockBuilder.Log("Invalid offsets in structure entry: " + entry);
-                    continue;
-                }
-
-                BlockPos structurePosition = position.offset(xOffset, yOffset, zOffset);
-
-                try {
-                    Path structurePath = Path.of("config/HavenSkyblockBuilder/AdditionalIslands", structureName + ".nbt");
-                    CompoundTag nbtData = NbtIo.readCompressed(structurePath, NbtAccounter.unlimitedHeap());
-
-                    StructureTemplate template = new StructureTemplate();
-                    HolderGetter<Block> blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK).asLookup();
-                    template.load(blockRegistry, nbtData);
-
-                    StructurePlaceSettings settings = new StructurePlaceSettings();
-                    template.placeInWorld(level, structurePosition, structurePosition, settings, null, 3);
-                } catch (Exception e) {
-                    HavenSkyblockBuilder.Log("Error loading additional structure '" + structureName + "': " + e.getMessage());
-                    throw new RuntimeException("Failed to load additional structure from path: " + structureName, e);
-                }
-
-            }
-        }
-    }
-
     private static BlockPos findNearestValidBlock(ServerLevel level, BlockPos basePos)
     {
         int searchRadius = 50;
@@ -244,7 +169,7 @@ public class SkyblockUtils
         }
 
         // Create the island
-        StructureTemplate template = SkyblockUtils.spawnStructure(level, basePosition, islandTemplate);
+        StructureTemplate template = StructureUtils.spawnStructure(level, basePosition, islandTemplate);
 
         // Determine the initial spawn position
         BlockPos spawnPosition = SkyblockUtils.determineSpawnPosition(level, template, basePosition, new ArrayList<>(HavenConfig.SpawnOffset));
@@ -288,7 +213,7 @@ public class SkyblockUtils
             context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
             int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
             player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
-            IslandDeleter.deleteIslandArea(level, team.getHomePosition());
+            IslandManager.deleteIslandArea(level, team.getHomePosition());
             return 1;
         }
         else
@@ -340,7 +265,7 @@ public class SkyblockUtils
 
         TeamManager.removeTeam(level.getServer(), team.getUuid());
         context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
-        IslandDeleter.deleteIslandArea(level, homePosition);
+        IslandManager.deleteIslandArea(level, homePosition);
         return 1;
     }
 
@@ -708,7 +633,7 @@ public class SkyblockUtils
     }
 
     // Admin Add Member to the team
-    public static int addMember(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    public static int addMember(CommandContext<CommandSourceStack> context)
     {
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("team", String.class);
@@ -741,7 +666,7 @@ public class SkyblockUtils
     }
 
     // Admin Remove Member from the team
-    public static int removeMember(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    public static int removeMember(CommandContext<CommandSourceStack> context)
     {
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("team", String.class);
@@ -776,7 +701,7 @@ public class SkyblockUtils
                 player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
                 context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
 
-                IslandDeleter.deleteIslandArea(level, team.getHomePosition());
+                IslandManager.deleteIslandArea(level, team.getHomePosition());
                 return 1;
             }
 
@@ -789,7 +714,7 @@ public class SkyblockUtils
         return 1;
     }
 
-    public static int adminChangeTeamName(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    public static int adminChangeTeamName(CommandContext<CommandSourceStack> context)
     {
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("team", String.class);
