@@ -8,6 +8,8 @@ import java.util.Map;
 
 public class HavenConfig
 {
+    public static boolean enableNetherSkyblock;
+    public static boolean enableEndSkyblock;
     public static int islandCreationHeight;
     public static List<? extends String> SpawnOffset;
     public static Integer islandDistance;
@@ -16,6 +18,8 @@ public class HavenConfig
 
     public static void bake(ModConfig config)
     {
+        enableNetherSkyblock = HavenSkyblockBuilder.c_config.enableNetherSkyblock.get();
+        enableEndSkyblock = HavenSkyblockBuilder.c_config.enableEndSkyblock.get();
         islandCreationHeight = HavenSkyblockBuilder.c_config.islandCreationHeight.get();
         SpawnOffset = HavenSkyblockBuilder.c_config.spawnOffset.get();
         islandDistance = HavenSkyblockBuilder.c_config.islandDistance.get();

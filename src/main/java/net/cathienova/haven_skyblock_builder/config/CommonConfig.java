@@ -8,6 +8,8 @@ import java.util.Map;
 
 
 public class CommonConfig {
+    public final ModConfigSpec.ConfigValue<Boolean> enableNetherSkyblock;
+    public final ModConfigSpec.ConfigValue<Boolean> enableEndSkyblock;
     public final ModConfigSpec.ConfigValue<Integer> islandCreationHeight;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnOffset;
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
@@ -15,6 +17,15 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<List<? extends String>> additionalStructures;
 
     public CommonConfig(ModConfigSpec.Builder builder) {
+        builder.comment("Skyblock Generation").push("skyblock_generation");
+        enableNetherSkyblock = builder
+                .comment("Enable Nether Skyblock Generation")
+                .define("enable_nether_skyblock", true);
+        enableEndSkyblock = builder
+                .comment("Enable End Skyblock Generation")
+                .define("enable_end_skyblock", true);
+        builder.pop();
+
         builder.comment("Island Creation Height").push("island_creation_height");
         islandCreationHeight = builder
                 .comment("The height at which the island will be created")

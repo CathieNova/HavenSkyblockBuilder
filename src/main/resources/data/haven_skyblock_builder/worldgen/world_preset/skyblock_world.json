@@ -1,0 +1,39 @@
+{
+    "dimensions": {
+        "minecraft:overworld": {
+            "type": "minecraft:overworld",
+            "generator": {
+                "type": "haven_skyblock_builder:skyblock",
+                "biome_source": {
+                    "type": "minecraft:multi_noise",
+                    "preset": "minecraft:overworld"
+                },
+                "settings": "minecraft:overworld",
+                "allowed_structure_sets": "haven_skyblock_builder:overworld_skyblock_structure_sets"
+            }
+        },
+        "minecraft:the_end": {
+            "type": "minecraft:the_end",
+            "generator": {
+                "type": "haven_skyblock_builder:skyblock",
+                "biome_source": {
+                    "type": "minecraft:the_end"
+                },
+                "settings": "minecraft:end",
+                "allowed_structure_sets": "haven_skyblock_builder:the_end_skyblock_structure_sets"
+            }
+        },
+        "minecraft:the_nether": {
+            "type": "minecraft:the_nether",
+            "generator": {
+                "type": "haven_skyblock_builder:skyblock",
+                "biome_source": {
+                    "type": "minecraft:multi_noise",
+                    "preset": "minecraft:nether"
+                },
+                "settings": "minecraft:nether",
+                "allowed_structure_sets": "haven_skyblock_builder:the_nether_skyblock_structure_sets"
+            }
+        }
+    }
+}

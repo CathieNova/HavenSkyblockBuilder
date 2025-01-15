@@ -35,7 +35,7 @@ import java.util.*;
 
 public class SkyblockUtils
 {
-    private static BlockPos findNearestValidBlock(ServerLevel level, BlockPos basePos)
+    public static BlockPos findNearestValidBlock(ServerLevel level, BlockPos basePos)
     {
         int searchRadius = 50;
         BlockPos bestPos = null;

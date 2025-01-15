@@ -3,19 +3,25 @@ package net.cathienova.haven_skyblock_builder;
 import com.mojang.logging.LogUtils;
 import net.cathienova.haven_skyblock_builder.commands.ModCommands;
 import net.cathienova.haven_skyblock_builder.config.CommonConfig;
+import net.cathienova.haven_skyblock_builder.events.ModEvents;
+import net.cathienova.haven_skyblock_builder.handler.ClientHandler;
 import net.cathienova.haven_skyblock_builder.item.*;
+import net.cathienova.haven_skyblock_builder.networking.NetworkHandler;
 import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.cathienova.haven_skyblock_builder.util.DistUtils;
+import net.cathienova.haven_skyblock_builder.world.ModChunkGenerators;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Mod(HavenSkyblockBuilder.MOD_ID)
@@ -41,6 +47,10 @@ public class HavenSkyblockBuilder
         ModItems.register(modEventBus);
         ModCreativeModTabs.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
+        ModChunkGenerators.CHUNK_GENERATORS.register(modEventBus);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientHandler.register(modEventBus);
+        }
         DistUtils.runIfOn(Dist.CLIENT, HavenSkyblockBuilderClient::new);
     }
 
@@ -56,5 +66,9 @@ public class HavenSkyblockBuilder
     private void onServerStarting(ServerStartingEvent event)
     {
         TeamManager.loadAllTeams(event.getServer());
+    }
+
+    public static ResourceLocation loc(String name) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, name);
     }
 }
