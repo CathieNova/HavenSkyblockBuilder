@@ -7,6 +7,7 @@ import java.util.List;
 
 public class CommonConfig {
     public final ModConfigSpec.ConfigValue<Integer> islandCreationHeight;
+    public final ModConfigSpec.ConfigValue<Boolean> enableNetherSkyblock;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnOffset;
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnPosition;
@@ -18,6 +19,11 @@ public class CommonConfig {
                 .comment("The height at which the island will be created")
                 .defineInRange("island_creation_height", 70, 1, Integer.MAX_VALUE);
         builder.pop();
+
+        builder.comment("Enable Nether Skyblock").push("enable_nether_skyblock");
+        enableNetherSkyblock = builder
+                .comment("Enable Nether Skyblock")
+                .define("enable_nether_skyblock", false);
 
         builder.comment("Spawn on Island Offset")
                 .push("spawn_offset");
