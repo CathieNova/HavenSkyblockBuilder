@@ -1,5 +1,6 @@
 package net.cathienova.haven_skyblock_builder.util;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder;
@@ -8,6 +9,7 @@ import net.cathienova.haven_skyblock_builder.team.Team;
 import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -20,7 +22,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Unit;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -32,6 +37,9 @@ import net.minecraft.world.phys.Vec3;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class SkyblockUtils
 {
@@ -172,7 +180,7 @@ public class SkyblockUtils
         StructureTemplate template = StructureUtils.spawnStructure(level, basePosition, islandTemplate);
 
         // Determine the initial spawn position
-        BlockPos spawnPosition = SkyblockUtils.determineSpawnPosition(level, template, basePosition, new ArrayList<>(HavenConfig.SpawnOffset));
+        BlockPos spawnPosition = determineSpawnPosition(level, template, basePosition, new ArrayList<>(HavenConfig.SpawnOffset));
 
         // Create the team and set the home position
         Team team = new Team(teamName, player.getUUID(), true, spawnPosition, new Vec2(player.getYRot(), player.getXRot()));
@@ -183,7 +191,6 @@ public class SkyblockUtils
         player.teleportTo(level, spawnPosition.getX() + 0.5, spawnPosition.getY() + 1, spawnPosition.getZ() + 0.5, 0, 0);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.creation_success", teamName));
-
         return 1;
     }
 
@@ -272,6 +279,7 @@ public class SkyblockUtils
     public static int goHome(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        ServerLevel level = context.getSource().getLevel();
         Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
                 .filter(team -> team.getMembers().stream().anyMatch(member -> member.getUuid().equals(player.getUUID())))
                 .findFirst();
@@ -292,7 +300,10 @@ public class SkyblockUtils
             return 0;
         }
 
-        player.teleportTo(context.getSource().getLevel(), home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
+        ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
+        assert overworld != null;
+
+        player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.home_teleport"));
         return 1;
@@ -300,70 +311,106 @@ public class SkyblockUtils
 
     public static int setHome(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
+        ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
         ServerLevel level = context.getSource().getLevel();
         ServerPlayer player = context.getSource().getPlayerOrException();
-        Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
-                .filter(team -> team.getLeader().equals(player.getUUID()))
-                .findFirst();
 
-        if (optionalTeam.isEmpty())
+        if (player.level() != overworld)
         {
-            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_leader"));
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.island.not_in_overworld"));
             return 0;
         }
+            else
+        {
 
-        Team team = optionalTeam.get();
-        BlockPos homePosition = player.blockPosition();
-        Vec2 homeRotation = player.getRotationVector();
-        team.setHomePosition(homePosition, homeRotation);
-        TeamManager.saveTeam(level.getServer(), team);
+            Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
+                    .filter(team -> team.getLeader().equals(player.getUUID()))
+                    .findFirst();
 
-        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.home_set", homePosition.toShortString()));
-        return 1;
+            if (optionalTeam.isEmpty())
+            {
+                player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_leader"));
+                return 0;
+            }
+
+            Team team = optionalTeam.get();
+            BlockPos homePosition = player.blockPosition();
+            Vec2 homeRotation = player.getRotationVector();
+            team.setHomePosition(homePosition, homeRotation);
+            TeamManager.saveTeam(level.getServer(), team);
+
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.home_set", homePosition.toShortString()));
+            return 1;
+        }
     }
 
     public static int visitIsland(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        String playerName = context.getArgument("player", String.class);
-
-        ServerPlayer target = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        if (target == null)
-        {
-            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.player_not_online", playerName));
+        ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
+        if (overworld == null) {
+            context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.error.teleport_failed"));
             return 0;
         }
 
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String teamName = context.getArgument("team", String.class);
+
+        // Find the team by name
         Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
-                .filter(team -> team.getMembers().stream().anyMatch(member -> member.getUuid().equals(target.getUUID())))
+                .filter(team -> team.getName().equalsIgnoreCase(teamName))
                 .findFirst();
 
-        if (optionalTeam.isEmpty())
-        {
-            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_in_team", playerName));
+        if (optionalTeam.isEmpty()) {
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_found", teamName));
             return 0;
         }
 
         Team team = optionalTeam.get();
-        if (!team.isAllowVisit())
-        {
-            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.visit_disabled", team.getName()));
+        if (!team.isAllowVisit()) {
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.visit_not_allowed", team.getName()));
             return 0;
         }
 
         BlockPos home = team.getHomePosition();
-        Vec2 homeRotation = team.getHomeRotation();
-
-        if (home == null)
-        {
+        if (home == null) {
             player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.no_home"));
             return 0;
         }
 
-        player.teleportTo(context.getSource().getLevel(), home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
+        if (team.getMembers().stream().anyMatch(member -> member.getUuid().equals(player.getUUID()))) {
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.can_not_visit_own_island"));
+            return 0;
+        }
+
+        Vec2 homeRotation = team.getHomeRotation();
+        if (homeRotation == null)
+            homeRotation = new Vec2(0, 0);
+
+        try {
+            player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
+            player.resetFallDistance();
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.visit_teleport", team.getName()));
+        } catch (Exception e) {
+            HavenSkyblockBuilder.Log("Error teleporting player to team home: " + e.getMessage());
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.error.teleport_failed"));
+            return 0;
+        }
+
+        return 1;
+    }
+
+    public static int goSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+
+        int[] home = parseConfigPosition(HavenConfig.spawnPosition);
+
+        ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
+        assert overworld != null;
+
+        player.teleportTo(overworld, home[0] + 0.5, home[1] + 1, home[2] + 0.5, 0, 0);
         player.resetFallDistance();
-        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.visit_teleport", team.getName()));
+        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.island.spawn_teleport"));
         return 1;
     }
 
@@ -371,6 +418,7 @@ public class SkyblockUtils
     {
         ServerLevel level = context.getSource().getLevel();
         ServerPlayer player = context.getSource().getPlayerOrException();
+
         Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
                 .filter(team -> team.getLeader().equals(player.getUUID()))
                 .findFirst();
@@ -382,7 +430,7 @@ public class SkyblockUtils
         }
 
         Team team = optionalTeam.get();
-        boolean allowVisit = context.getArgument("allow", Boolean.class);
+        boolean allowVisit = BoolArgumentType.getBool(context, "allow");
         team.setAllowVisit(allowVisit);
         TeamManager.saveTeam(level.getServer(), team);
 
@@ -392,14 +440,7 @@ public class SkyblockUtils
 
     public static int invitePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer inviter = context.getSource().getPlayerOrException();
-        String playerName = context.getArgument("player", String.class);
-
-        ServerPlayer invitee = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        if (invitee == null) {
-            inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.player_not_online", playerName));
-            return 0;
-        }
+        ServerPlayer invitee = EntityArgument.getPlayer(context, "player");
 
         Team inviterTeam = TeamManager.getTeamByPlayer(inviter.getUUID());
 
@@ -409,17 +450,17 @@ public class SkyblockUtils
         }
 
         if (TeamManager.getTeamByPlayer(invitee.getUUID()) != null) {
-            inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.already_in_team", playerName));
+            inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.already_in_team", invitee.getName().getString()));
             return 0;
         }
 
         if (TeamManager.getPendingInvite(invitee.getUUID()) != null && !TeamManager.isInviteExpired(invitee.getUUID())) {
-            inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.invite_already_sent", playerName));
+            inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.invite_already_sent", invitee.getName().getString()));
             return 0;
         }
 
         TeamManager.addPendingInvite(invitee.getUUID(), inviterTeam.getUuid());
-        inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.invite_sent", playerName));
+        inviter.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.invite_sent", invitee.getName().getString()));
         invitee.sendSystemMessage(
                 Component.translatable("haven_skyblock_builder.team.invite_received", inviter.getName().getString())
                         .append(" ")
@@ -484,9 +525,16 @@ public class SkyblockUtils
     {
         ServerPlayer leader = context.getSource().getPlayerOrException();
         ServerLevel level = context.getSource().getLevel();
-        String playerName = context.getArgument("player", String.class);
+        ServerPlayer toKick = EntityArgument.getPlayer(context, "player");
+
+        if (toKick.getUUID() == leader.getUUID())
+        {
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.cannot_kick_self"));
+            return 0;
+        }
 
         Team team = TeamManager.getTeamByPlayer(leader.getUUID());
+
 
         if (team == null || !team.getLeader().equals(leader.getUUID()))
         {
@@ -494,9 +542,6 @@ public class SkyblockUtils
             return 0;
         }
 
-        ServerPlayer toKick = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        assert toKick != null;
         if (team.getLeader() == toKick.getUUID())
         {
             leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.cannot_kick_leader"));
@@ -505,22 +550,28 @@ public class SkyblockUtils
 
         if (team.getMembers().stream().noneMatch(member -> member.getUuid().equals(toKick.getUUID())))
         {
-            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.member_not_found", playerName));
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.member_not_found", toKick.getName().getString()));
             return 0;
         }
 
-        team.removeMember(toKick.getUUID());
-        int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-        toKick.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
-        leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kick_success", playerName));
-        toKick.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kicked", team.getName()));
-        return 1;
+        try {
+            team.removeMember(toKick.getUUID());
+            int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
+            toKick.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kick_success", toKick.getName().getString()));
+            toKick.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kicked", team.getName()));
+            return 1;
+        } catch (Exception e) {
+            HavenSkyblockBuilder.Log("Error kicking player from team: " + e.getMessage());
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.error.kick_failed"));
+            return 0;
+        }
     }
 
     public static int deportPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer leader = context.getSource().getPlayerOrException();
         ServerLevel level = context.getSource().getLevel();
-        String playerName = context.getArgument("player", String.class);
+        ServerPlayer targetPlayer = EntityArgument.getPlayer(context, "player");
 
         Team team = TeamManager.getTeamByPlayer(leader.getUUID());
 
@@ -529,15 +580,8 @@ public class SkyblockUtils
             return 0;
         }
 
-        ServerPlayer targetPlayer = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        if (targetPlayer == null) {
-            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.player_not_found", playerName));
-            return 0;
-        }
-
         if (team.getMembers().stream().anyMatch(member -> member.getUuid().equals(targetPlayer.getUUID()))) {
-            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.cannot_boot_team_member"));
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.cannot_deport_team_member"));
             return 0;
         }
 
@@ -558,7 +602,7 @@ public class SkyblockUtils
             targetPlayer.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.booted_to_spawn"));
         }
 
-        leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.boot_success", playerName));
+        leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.boot_success", targetPlayer.getName().getString()));
         return 1;
     }
 
@@ -591,26 +635,24 @@ public class SkyblockUtils
     public static int transferLeadership(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerPlayer leader = context.getSource().getPlayerOrException();
-        String playerName = context.getArgument("player", String.class);
+        ServerPlayer newLeader = EntityArgument.getPlayer(context, "player");
 
         Team team = TeamManager.getTeamByPlayer(leader.getUUID());
 
-        if (team == null || !team.getLeader().equals(leader.getUUID()))
+        if (team == null)
+        {
+            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_in_team"));
+            return 0;
+        }
+
+        if (!team.getLeader().equals(leader.getUUID()))
         {
             leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_leader"));
             return 0;
         }
 
-        ServerPlayer newLeader = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        if (newLeader == null || team.getMembers().stream().noneMatch(member -> member.getUuid().equals(newLeader.getUUID())))
-        {
-            leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.member_not_found", playerName));
-            return 0;
-        }
-
         team.setLeader(newLeader.getUUID());
-        leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.transfer_success", playerName));
+        leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.transfer_success", newLeader.getName().getString()));
         newLeader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.new_leader", team.getName()));
         return 1;
     }
@@ -633,11 +675,11 @@ public class SkyblockUtils
     }
 
     // Admin Add Member to the team
-    public static int addMember(CommandContext<CommandSourceStack> context)
+    public static int addMember(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("team", String.class);
-        String playerName = context.getArgument("player", String.class);
+        ServerPlayer playerName = EntityArgument.getPlayer(context, "player");
 
         Team team = TeamManager.getAllTeams().stream()
                 .filter(t -> t.getName().equalsIgnoreCase(teamName))
@@ -650,15 +692,7 @@ public class SkyblockUtils
             return 0;
         }
 
-        ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
-
-        if (player == null)
-        {
-            context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.team.player_not_found"));
-            return 0;
-        }
-
-        team.addMember(player.getUUID(), player.getName().getString());
+        team.addMember(playerName.getUUID(), playerName.getName().getString());
         TeamManager.saveTeam(level.getServer(), team);
 
         context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.member_added", playerName, teamName), true);
@@ -666,11 +700,11 @@ public class SkyblockUtils
     }
 
     // Admin Remove Member from the team
-    public static int removeMember(CommandContext<CommandSourceStack> context)
+    public static int removeMember(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("team", String.class);
-        String playerName = context.getArgument("player", String.class);
+        ServerPlayer playerName = EntityArgument.getPlayer(context, "player");
 
         Team team = TeamManager.getAllTeams().stream()
                 .filter(t -> t.getName().equalsIgnoreCase(teamName))
@@ -683,7 +717,7 @@ public class SkyblockUtils
             return 0;
         }
 
-        ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
+        ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayerByName(playerName.getName().getString());
 
         if (player == null)
         {
@@ -735,6 +769,25 @@ public class SkyblockUtils
         TeamManager.saveTeam(level.getServer(), team);
 
         context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.name_changed", newName), true);
+        return 1;
+    }
+
+    public static int islandInfo(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
+    {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        Team team = TeamManager.getTeamByPlayer(player.getUUID());
+
+        if (team == null)
+        {
+            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.not_in_team"));
+            return 0;
+        }
+
+        String teamMembers = team.getMembers().stream().map(Team.Member::getName).reduce((a, b) -> a + ", " + b).orElse("");
+        String allowVisit = team.isAllowVisit() ? "true" : "false";
+
+        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.island_information",
+                team.getName(), team.getLeaderName(), allowVisit, team.getHomePosition().toShortString(), teamMembers));
         return 1;
     }
 }

@@ -11,7 +11,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 @EventBusSubscriber(modid = HavenSkyblockBuilder.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
 public class ModEvents
@@ -34,8 +39,47 @@ public class ModEvents
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Failed to create marker file", e);
+                throw new RuntimeException("Failed to create marker file or copy files", e);
             }
         }
+    }
+
+    public static void generateDefaultTemplates()
+    {
+        Path additionalIslandsPath = new File("config/HavenSkyblockBuilder/AdditionalIslands").toPath();
+        Path templatesPath = new File("config/HavenSkyblockBuilder/Templates").toPath();
+        if (!Files.exists(additionalIslandsPath))
+        {
+            try
+            {
+                Files.createDirectories(additionalIslandsPath);
+                copyFile("assets/haven_skyblock_builder/structures/additional_sand_island.nbt", new File(additionalIslandsPath.toFile(), "additional_sand_island.nbt"));
+
+            } catch (IOException e)
+            {
+                HavenSkyblockBuilder.Log("Failed to create AdditionalIslands folder: " + e.getMessage());
+            }
+        }
+
+        if (!Files.exists(templatesPath))
+        {
+            try
+            {
+                Files.createDirectories(templatesPath);
+                copyFile("assets/haven_skyblock_builder/structures/classic_island.nbt", new File(templatesPath.toFile(), "classic_island.nbt"));
+            } catch (IOException e)
+            {
+                HavenSkyblockBuilder.Log("Failed to create Templates folder: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void copyFile(String sourcePath, File destination) throws IOException {
+        InputStream inputStream = MinecraftServer.class.getClassLoader().getResourceAsStream(sourcePath);
+        if (inputStream == null) {
+            throw new FileNotFoundException("Source file not found: " + sourcePath);
+        }
+        Files.copy(inputStream, destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        inputStream.close();
     }
 }

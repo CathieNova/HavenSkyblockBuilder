@@ -19,7 +19,7 @@ public class CommandSuggestions
         return CompletableFuture.supplyAsync(() ->
         {
             context.getSource().getServer().getPlayerList().getPlayers().stream()
-                    .map(player -> player.getName().getString())
+                    .map(player -> player.getDisplayName().getString())
                     .filter(name -> name.startsWith(builder.getRemaining()))
                     .forEach(builder::suggest);
             return builder.build();
@@ -31,7 +31,7 @@ public class CommandSuggestions
         return CompletableFuture.supplyAsync(() ->
         {
             context.getSource().getServer().getPlayerList().getPlayers().stream()
-                    .map(player -> player.getName().getString())
+                    .map(player -> player.getDisplayName().getString())
                     .filter(name -> name.startsWith(builder.getRemaining()))
                     .forEach(builder::suggest);
             return builder.build();
@@ -64,14 +64,14 @@ public class CommandSuggestions
     }
 
     public static CompletableFuture<Suggestions> suggestIslandTemplates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        File templatesFolder = new File("config/HavenSkyblockBuilder/Templates"); // Define the folder path relative to the server directory
+        File templatesFolder = new File("config/HavenSkyblockBuilder/Templates");
 
         if (templatesFolder.exists() && templatesFolder.isDirectory()) {
-            File[] files = templatesFolder.listFiles((dir, name) -> name.endsWith(".nbt")); // Filter NBT files
+            File[] files = templatesFolder.listFiles((dir, name) -> name.endsWith(".nbt"));
             if (files != null) {
                 for (File file : files) {
-                    String templateName = file.getName().replace(".nbt", ""); // Remove ".nbt" extension
-                    builder.suggest(templateName); // Add each template to suggestions
+                    String templateName = file.getName().replace(".nbt", "");
+                    builder.suggest(templateName);
                 }
             }
         }

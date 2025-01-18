@@ -2,14 +2,10 @@ package net.cathienova.haven_skyblock_builder.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public class CommonConfig {
-    public final ModConfigSpec.ConfigValue<Boolean> enableNetherSkyblock;
-    public final ModConfigSpec.ConfigValue<Boolean> enableEndSkyblock;
     public final ModConfigSpec.ConfigValue<Integer> islandCreationHeight;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnOffset;
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
@@ -17,15 +13,6 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<List<? extends String>> additionalStructures;
 
     public CommonConfig(ModConfigSpec.Builder builder) {
-        builder.comment("Skyblock Generation").push("skyblock_generation");
-        enableNetherSkyblock = builder
-                .comment("Enable Nether Skyblock Generation")
-                .define("enable_nether_skyblock", true);
-        enableEndSkyblock = builder
-                .comment("Enable End Skyblock Generation")
-                .define("enable_end_skyblock", true);
-        builder.pop();
-
         builder.comment("Island Creation Height").push("island_creation_height");
         islandCreationHeight = builder
                 .comment("The height at which the island will be created")
@@ -89,15 +76,14 @@ public class CommonConfig {
                 Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
                 Examples:
                   - None: []
-                  - One: ["skyblock_island=an_island,10,5,0"]
-                  - Three: [
-                      "skyblock_island=an_island,10,5,0",
-                      "skyblock_island=second_island,15,10,5",
-                      "skyblock_island=third_island,-20,0,-10"
+                  - One: ["classic_island=additional_sand_island,0,0,-75"]
+                  - Two: [
+                      "classic_island=additional_sand_island,0,0,-75",
+                      "classic_island=additional_jungle_island,0,0,75"
                     ]
                 """)
                 .defineList("additional_structures",
-                        List.of("skyblock_island=an_island,50,0,0"),
+                        List.of("classic_island=additional_sand_island,0,0,-75"),
                         obj -> {
                             if (!(obj instanceof String)) {
                                 return false;

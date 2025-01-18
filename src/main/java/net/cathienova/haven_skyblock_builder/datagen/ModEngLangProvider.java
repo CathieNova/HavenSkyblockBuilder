@@ -18,9 +18,12 @@ public class ModEngLangProvider extends LanguageProvider
         String prefix = "§6[§5Haven §2Skyblock §3Builder§6]§r ";
         add(ModCreativeModTabs.HavenSkyblockBuilder_tab_title, "Haven Skyblock Builder");
 
-        add("haven_skyblock_builder.island.create.name", prefix + "&cPlease provide a name for your island.");
-        add("haven_skyblock_builder.island.create.missing_island", prefix + "&cMissing island name for the creation.");
-        add("haven_skyblock_builder.island.create.missing_name", prefix + "&cMissing name for the island.");
+        add("haven_skyblock_builder.island.create.name", prefix + "§cPlease provide a name for your island.");
+        add("haven_skyblock_builder.island.create.missing_island", prefix + "§cMissing island name for the creation.");
+        add("haven_skyblock_builder.island.create.missing_name", prefix + "§cMissing name for the island.");
+        add("haven_skyblock_builder.island.not_in_overworld", prefix + "§cYou must be in the overworld for this command.");
+        add("haven_skyblock_builder.island.spawn_teleport", prefix + "§aTeleported to spawn.");
+
         add("haven_skyblock_builder.team.creation_success", prefix + "§6'§5%s§6' §acreated successfully. Welcome to your new island!");
         add("haven_skyblock_builder.team.already_in_team", prefix + "§cYou are already in a team.");
         add("haven_skyblock_builder.team.name_exists", prefix + "§cA team with that name already exists.");
@@ -56,16 +59,25 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.invite_already_sent", prefix + "§cAn invitation has already been sent to §6'§5%s§6'§c.");
         add("haven_skyblock_builder.team.name_changed", prefix + "§aTeam name changed to §6'§5%s§6'§a.");
         add("haven_skyblock_builder.team.list_entry", "§6'§5%s§6' §a- Leader: §6'§5%s§6'§a, Members: %s");
-        add("haven_skyblock_builder.team.visit_disabled", prefix + "§cVisiting this island is disabled.");
+        add("haven_skyblock_builder.team.visit_disabled", prefix + "§cVisiting this island is now disabled.");
+        add("haven_skyblock_builder.team.visit_enabled", prefix + "§aVisiting this island is now enabled.");
         add("haven_skyblock_builder.team.visit_teleport", prefix + "§aTeleported to §6'§5%s§6'§a's island.");
+        add("haven_skyblock_builder.team.visit_not_allowed", prefix + "§cYou are not allowed to visit §6'§5%s§6'§c'.");
         add("haven_skyblock_builder.team.cannot_kick_leader", prefix + "§cYou cannot kick the team leader.");
         add("haven_skyblock_builder.admin.no_permission", prefix + "§cYou do not have permission to use this command.");
 
-        add("haven_skyblock_builder.team.cannot_boot_team_member", prefix + "§cYou cannot boot a member of your own team.");
+        add("haven_skyblock_builder.team.cannot_deport_team_member", prefix + "§cYou cannot deport a member of your own team.");
         add("haven_skyblock_builder.team.not_near_island", prefix + "§cThe player is not near your island.");
         add("haven_skyblock_builder.team.booted_to_own_island", prefix + "§cYou have been deported to your own island.");
         add("haven_skyblock_builder.team.booted_to_spawn", prefix + "§cYou have been deported to the spawn area.");
         add("haven_skyblock_builder.team.boot_success", prefix + "§aPlayer §6'§5%s§6' §ahas been deported from the island.");
+        add("haven_skyblock_builder.team.cannot_kick_self", prefix + "§cYou cannot kick yourself from the team.");
+        add("haven_skyblock_builder.team.can_not_visit_own_island", prefix + "§cYou cannot visit your own island.");
+        // using ' with colors will not display colors after ' so we need a different approach
+        add("haven_skyblock_builder.team.island_information", prefix + "§aTeam: §6'§5%s§6'§a\nLeader: §6'§5%s§6'§a\nAllow visit: %s\n§aHome Position: §5%s§r\n§aMembers: §5%s");
+
+        add("haven_skyblock_builder.error.teleport_failed", prefix + "§cFailed to teleport to the island. Please try again...");
+        add("haven_skyblock_builder.error.kick_failed", prefix + "§cFailed to kick player from the team. Please try again...");
 
 
         add("haven_skyblock_builder.reload", prefix + "§aConfig reloaded.");

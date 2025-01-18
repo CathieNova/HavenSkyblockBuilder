@@ -3,6 +3,7 @@ package net.cathienova.haven_skyblock_builder;
 import com.mojang.logging.LogUtils;
 import net.cathienova.haven_skyblock_builder.commands.ModCommands;
 import net.cathienova.haven_skyblock_builder.config.CommonConfig;
+import net.cathienova.haven_skyblock_builder.events.EventHandler;
 import net.cathienova.haven_skyblock_builder.events.ModEvents;
 import net.cathienova.haven_skyblock_builder.handler.ClientHandler;
 import net.cathienova.haven_skyblock_builder.item.*;
@@ -12,10 +13,12 @@ import net.cathienova.haven_skyblock_builder.util.DistUtils;
 import net.cathienova.haven_skyblock_builder.world.ModChunkGenerators;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.NeoForge;
@@ -48,6 +51,7 @@ public class HavenSkyblockBuilder
         ModCreativeModTabs.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         ModChunkGenerators.CHUNK_GENERATORS.register(modEventBus);
+        EventHandler.register(modEventBus);
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientHandler.register(modEventBus);
         }

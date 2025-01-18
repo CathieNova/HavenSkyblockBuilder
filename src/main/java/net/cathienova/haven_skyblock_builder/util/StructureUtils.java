@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -36,7 +37,8 @@ public class StructureUtils
             template.load(blockRegistry, nbtData);
 
             StructurePlaceSettings settings = new StructurePlaceSettings();
-            template.placeInWorld(level, position, position, settings, null, 3);
+            RandomSource random = RandomSource.create();
+            template.placeInWorld(level, position, position, settings, random, 3);
             spawnAdditionalStructures(level, position, islandTemplate);
         } catch (Exception e)
         {
@@ -76,6 +78,7 @@ public class StructureUtils
                 BlockPos structurePosition = position.offset(xOffset, yOffset, zOffset);
 
                 try {
+                    HavenSkyblockBuilder.Log("Spawning additional structure '" + structureName + "' at " + structurePosition);
                     Path structurePath = Path.of("config/HavenSkyblockBuilder/AdditionalIslands", structureName + ".nbt");
                     CompoundTag nbtData = NbtIo.readCompressed(structurePath, NbtAccounter.unlimitedHeap());
 
@@ -84,7 +87,9 @@ public class StructureUtils
                     template.load(blockRegistry, nbtData);
 
                     StructurePlaceSettings settings = new StructurePlaceSettings();
-                    template.placeInWorld(level, structurePosition, structurePosition, settings, null, 3);
+                    RandomSource random = RandomSource.create();
+                    template.placeInWorld(level, structurePosition, structurePosition, settings, random, 3);
+
                 } catch (Exception e) {
                     HavenSkyblockBuilder.Log("Error loading additional structure '" + structureName + "': " + e.getMessage());
                     throw new RuntimeException("Failed to load additional structure from path: " + structureName, e);

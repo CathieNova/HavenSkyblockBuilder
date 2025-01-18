@@ -11,11 +11,14 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import java.util.concurrent.CompletableFuture;
 
-public class DataGenerators {
+public class DataGenerators
+{
     @EventBusSubscriber(modid = HavenSkyblockBuilder.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
-    public static class ModRecipeProvider {
+    public static class ModRecipeProvider
+    {
         @SubscribeEvent
-        public static void gatherData(GatherDataEvent event) {
+        public static void gatherData(GatherDataEvent event)
+        {
             DataGenerator generator = event.getGenerator();
             PackOutput output = generator.getPackOutput();
             ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
@@ -24,8 +27,13 @@ public class DataGenerators {
             boolean includeClient = event.includeClient();
             boolean includeServer = event.includeServer();
 
-            if (includeClient) {
+            if (includeClient)
+            {
                 generator.addProvider(includeClient, new ModEngLangProvider(output));
+            }
+            if (includeServer)
+            {
+                generator.addProvider(includeServer, new ModStructureTagGenerator(output, lookupProvider, existingFileHelper));
             }
         }
     }

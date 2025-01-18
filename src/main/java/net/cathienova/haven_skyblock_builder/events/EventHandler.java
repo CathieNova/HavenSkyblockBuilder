@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -27,6 +28,7 @@ public class EventHandler
         fmlBus.addListener(EventHandler::onPlayerLogout);
         fmlBus.addListener(EventHandler::onPlayerRespawn);
         modBus.addListener(EventHandler::registerPayloadHandler);
+        modBus.addListener(EventHandler::onCommonSetup);
     }
 
     public static void registerPayloadHandler(RegisterPayloadHandlersEvent event) {
@@ -52,13 +54,13 @@ public class EventHandler
             var generator = player.serverLevel().getChunkSource().getGenerator();
 
             if (generator instanceof SkyblockChunkGenerator || generator.getClass().getName().toLowerCase(Locale.ROOT).contains("skyblock")) {
-                NetworkHandler.sendSkyblockWorld(player);
+                //NetworkHandler.sendSkyblockWorld(player);
 
                 Team team = TeamManager.getTeamByPlayer(player.getUUID());
                 if (team == null)
                 {
                     BlockPos pos = SkyblockUtils.findNearestValidBlock((ServerLevel) player.level(), new BlockPos(0, 71, 0));
-                    player.teleportTo(pos.getX(), pos.getY(), pos.getZ());
+                    player.teleportTo(pos.getX() + 0.5f, pos.getY(), pos.getZ() + 0.5f);
                     player.sendSystemMessage(Component.translatable("haven_skyblock_builder.message.skyblock_spawn"));
                 }
             }
@@ -72,5 +74,10 @@ public class EventHandler
                TeamManager.saveTeam(event.getEntity().getServer(), team);
             }
         }
+    }
+
+    private static void onCommonSetup(FMLCommonSetupEvent event)
+    {
+        ModEvents.generateDefaultTemplates();
     }
 }
