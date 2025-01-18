@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
@@ -67,8 +68,7 @@ public class ClientHandler
 
         var level = Minecraft.getInstance().level;
         if (level != null) {
-            // Somehow the clientLevelData is private, got to figure out how to access it
-            //level.clientLevelData.isFlat = true;
+            level.clientLevelData.isFlat = true;
         }
     }
 }

@@ -54,7 +54,7 @@ public class EventHandler
             var generator = player.serverLevel().getChunkSource().getGenerator();
 
             if (generator instanceof SkyblockChunkGenerator || generator.getClass().getName().toLowerCase(Locale.ROOT).contains("skyblock")) {
-                //NetworkHandler.sendSkyblockWorld(player);
+                NetworkHandler.sendSkyblockWorld(player);
 
                 Team team = TeamManager.getTeamByPlayer(player.getUUID());
                 if (team == null)
