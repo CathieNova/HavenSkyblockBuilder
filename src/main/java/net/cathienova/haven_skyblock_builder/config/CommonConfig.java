@@ -22,8 +22,8 @@ public class CommonConfig {
 
         builder.comment("Enable Nether Skyblock").push("enable_nether_skyblock");
         enableNetherSkyblock = builder
-                .comment("Enable Nether Skyblock")
-                .define("enable_nether_skyblock", false);
+                .comment("If true, it will generate a completely empty Nether world where the only feature is your portal.")
+                .define("enable_nether_skyblock", true);
 
         builder.comment("Spawn on Island Offset")
                 .push("spawn_offset");
