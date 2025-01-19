@@ -46,7 +46,8 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
         super(biomeSource, settings);
         this.settings = settings;
         this.allowedStructureSets = allowedStructureSets;
-        this.generateNormal = (settings.is(ResourceLocation.parse("minecraft:end"))) || (settings.is(ResourceLocation.parse("minecraft:nether")) && !HavenConfig.enableNetherSkyblock);
+        this.generateNormal = (settings.is(ResourceLocation.parse("minecraft:end"))) ||
+                (settings.is(ResourceLocation.parse("minecraft:the_nether")) && !HavenConfig.enableNetherSkyblock);
         this.allowBiomeDecoration = !settings.is(ResourceLocation.parse("minecraft:overworld"));
     }
 
