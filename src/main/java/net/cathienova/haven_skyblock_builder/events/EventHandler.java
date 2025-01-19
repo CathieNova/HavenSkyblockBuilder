@@ -45,7 +45,7 @@ public class EventHandler
         else
         {
             int[] spawn = SkyblockUtils.parseConfigPosition(HavenConfig.spawnPosition);
-            player.teleportTo(spawn[0], spawn[1], spawn[2]);
+            player.teleportTo(spawn[0], spawn[1] + 1, spawn[2]);
         }
     }
 
