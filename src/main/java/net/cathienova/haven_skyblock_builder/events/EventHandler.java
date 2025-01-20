@@ -40,7 +40,7 @@ public class EventHandler
         ServerPlayer player = (ServerPlayer) event.getEntity();
         Team team = TeamManager.getTeamByPlayer(player.getUUID());
         if (team != null) {
-            player.teleportTo(team.getHomePosition().getX(), team.getHomePosition().getY(), team.getHomePosition().getZ());
+            player.teleportTo(team.getHomePosition().getX(), team.getHomePosition().getY() + 1, team.getHomePosition().getZ());
         }
         else
         {
@@ -60,7 +60,7 @@ public class EventHandler
                 if (team == null)
                 {
                     BlockPos pos = SkyblockUtils.findNearestValidBlock((ServerLevel) player.level(), new BlockPos(0, 71, 0));
-                    player.teleportTo(pos.getX() + 0.5f, pos.getY(), pos.getZ() + 0.5f);
+                    player.teleportTo(pos.getX() + 0.5f, pos.getY() + 1, pos.getZ() + 0.5f);
                     player.sendSystemMessage(Component.translatable("haven_skyblock_builder.message.skyblock_spawn"));
                 }
             }
