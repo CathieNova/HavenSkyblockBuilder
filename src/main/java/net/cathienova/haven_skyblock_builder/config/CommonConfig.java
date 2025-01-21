@@ -62,7 +62,7 @@ public class CommonConfig {
                 The X, Y, Z coordinates of the world spawn position.
                 Example: ["0", "71", "0"] (Default spawn at 0, 70, 0).
                 """)
-                .defineList("spawn_position", List.of("0", "71", "0"), obj -> {
+                .defineList("spawn_position", List.of("0", "70", "0"), obj -> {
                     if (!(obj instanceof String)) {
                         return false;
                     }

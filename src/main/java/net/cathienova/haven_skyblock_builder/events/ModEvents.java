@@ -1,6 +1,7 @@
 package net.cathienova.haven_skyblock_builder.events;
 
 import net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder;
+import net.cathienova.haven_skyblock_builder.util.StructureUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -33,11 +34,8 @@ public class ModEvents
             configFolder.mkdirs();
             try {
                 markerFile.createNewFile();
-                for (int x = -1; x <= 1; x++) {
-                    for (int z = -1; z <= 1; z++) {
-                        level.setBlock(new BlockPos(x, 70, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
-                    }
-                }
+
+                StructureUtils.createSpawnIsland(level, new BlockPos(-3, 68, -3), "spawn_island");
             } catch (IOException e) {
                 throw new RuntimeException("Failed to create marker file or copy files", e);
             }
@@ -48,6 +46,20 @@ public class ModEvents
     {
         Path additionalIslandsPath = new File("config/HavenSkyblockBuilder/AdditionalIslands").toPath();
         Path templatesPath = new File("config/HavenSkyblockBuilder/Templates").toPath();
+        Path spawnIslandPath = new File("config/HavenSkyblockBuilder").toPath();
+
+        if (!Files.exists(spawnIslandPath))
+        {
+            try
+            {
+                Files.createDirectories(spawnIslandPath);
+                copyFile("assets/haven_skyblock_builder/structures/spawn_island.nbt", new File(spawnIslandPath.toFile(), "spawn_island.nbt"));
+            } catch (IOException e)
+            {
+                HavenSkyblockBuilder.Log("Failed to create SpawnIsland folder: " + e.getMessage());
+            }
+        }
+
         if (!Files.exists(additionalIslandsPath))
         {
             try
