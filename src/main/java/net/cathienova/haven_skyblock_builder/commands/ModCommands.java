@@ -89,7 +89,7 @@ public class ModCommands
                         .suggests(CommandSuggestions::suggestStates)
                         .executes(SkyblockUtils::setAllowVisit)));
         leader.then(Commands.literal(("changename"))
-                .then(Commands.argument("name", StringArgumentType.word())
+                .then(Commands.argument("name", StringArgumentType.greedyString())
                         .executes(SkyblockUtils::changeTeamName)));
         command.then(leader);
 
@@ -113,7 +113,7 @@ public class ModCommands
         admin.then(Commands.literal("changename")
                 .then(Commands.argument("team", StringArgumentType.word())
                         .suggests(CommandSuggestions::suggestTeams)
-                        .then(Commands.argument("name", StringArgumentType.word())
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(SkyblockUtils::adminChangeTeamName))));
         command.then(admin);
 
