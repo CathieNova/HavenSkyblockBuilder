@@ -45,7 +45,7 @@ public class ModCommands
                             context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_name"));
                             return 0;
                         })
-                        .then(Commands.argument("name", StringArgumentType.word())
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(SkyblockUtils::createTeam))));
         island.then(Commands.literal("home").executes(SkyblockUtils::goHome));
         island.then(Commands.literal("info").executes(SkyblockUtils::islandInfo));
@@ -67,7 +67,7 @@ public class ModCommands
                         .suggests(CommandSuggestions::suggestOnlinePlayers)
                         .executes(SkyblockUtils::deportPlayer)));
         team.then(Commands.literal("visit")
-                .then(Commands.argument("team", StringArgumentType.word())
+                .then(Commands.argument("team", StringArgumentType.greedyString())
                         .suggests(CommandSuggestions::suggestTeams)
                         .executes(SkyblockUtils::visitIsland)));
         command.then(team);

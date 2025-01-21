@@ -53,14 +53,14 @@ public class CommandSuggestions
         return builder.buildFuture();
     }
 
-    public static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
-        TeamManager.getAllTeams().stream()
-                .map(Team::getName)
-                .filter(name -> name.startsWith(builder.getRemaining()))
-                .forEach(builder::suggest);
-
-        return builder.buildFuture();
+    public static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        return CompletableFuture.supplyAsync(() -> {
+            TeamManager.getAllTeams().stream()
+                    .map(Team::getName)
+                    .filter(name -> name.toLowerCase().startsWith(builder.getRemaining().toLowerCase()))
+                    .forEach(builder::suggest);
+            return builder.build();
+        });
     }
 
     public static CompletableFuture<Suggestions> suggestIslandTemplates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
