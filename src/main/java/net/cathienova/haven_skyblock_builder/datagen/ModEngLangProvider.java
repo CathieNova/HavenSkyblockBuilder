@@ -83,6 +83,11 @@ public class ModEngLangProvider extends LanguageProvider
 
         add("haven_skyblock_builder.reload", prefix + "§aConfig reloaded.");
 
+        add("haven_skyblock_builder.gui.screen", "Haven Skyblock Builder");
+
+        add("key.categories.haven_skyblock_builder", "Haven Skyblock Builder");
+        add("key.haven_skyblock_builder.open_skyblock_screen", "Open Haven Skyblock Builder GUI");
+
         add("generator.haven_skyblock_builder.skyblock_world", "Haven Skyblock");
         add("haven_skyblock_builder.message.skyblock_spawn", prefix + "§aYou don't have an island yet, you can make one with '/havensb island create <template> <name>'.");
     }
