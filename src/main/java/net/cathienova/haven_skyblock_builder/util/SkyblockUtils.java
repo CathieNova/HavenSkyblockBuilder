@@ -11,76 +11,48 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtAccounter;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.util.Unit;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class SkyblockUtils
 {
-    public static BlockPos findNearestValidBlock(ServerLevel level, BlockPos basePos)
-    {
-        int searchRadius = 50;
-        BlockPos bestPos = null;
-        int highestY = Integer.MIN_VALUE;
-
-        for (int dx = -searchRadius; dx <= searchRadius; dx++)
-        {
-            for (int dz = -searchRadius; dz <= searchRadius; dz++)
-            {
-                BlockPos checkPos = basePos.offset(dx, 0, dz);
-                BlockPos validPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, checkPos).above();
-
-                // Check if the position is valid for teleportation
-                if (level.isEmptyBlock(validPos) && level.isEmptyBlock(validPos.above()))
-                {
-                    BlockPos blockBelow = validPos.below(); // Block the player will stand on
-                    var blockState = level.getBlockState(blockBelow);
-
-                    // Exclude blocks you don't want to spawn on
-                    if (blockState.is(Blocks.WATER) ||
-                            blockState.is(Blocks.CHEST) ||
-                            blockState.is(BlockTags.LOGS) ||
-                            blockState.is(BlockTags.LEAVES))
-                    {
+    public static BlockPos findNearestValidBlock(ServerLevel level, BlockPos basePos) {
+        int maxSearchRadius = 50;
+        for (int radius = 0; radius <= maxSearchRadius; radius++) {
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (Math.abs(x) != radius && Math.abs(z) != radius) {
                         continue;
                     }
+                    BlockPos checkPos = basePos.offset(x, 0, z);
+                    BlockPos validPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, checkPos).above();
 
-                    if (validPos.getY() > highestY)
-                    {
-                        highestY = validPos.getY();
-                        bestPos = validPos;
+                    if (level.isEmptyBlock(validPos) && level.isEmptyBlock(validPos.above())) {
+                        BlockPos blockBelow = validPos.below();
+                        var blockState = level.getBlockState(blockBelow);
+
+                        if (isValidSpawnPosition(level, validPos)) {
+                            continue;
+                        }
+
+                        return validPos;
                     }
                 }
             }
         }
-
-        return bestPos != null ? bestPos : basePos;
+        return basePos;
     }
 
     private static BlockPos determineSpawnPosition(ServerLevel level, StructureTemplate template, BlockPos basePos, List<String> offsetList)
@@ -93,14 +65,10 @@ public class SkyblockUtils
         int centerZ = basePos.getZ() + size.getZ() / 2;
 
         // Parse offset from config
-        int[] offset = parseConfigPosition(offsetList);
-        int offsetX = offset[0];
-        int offsetY = offset[1];
-        int offsetZ = offset[2];
+        BlockPos offset = parseConfigPosition(offsetList);
 
         // Apply offset to center position and find the topmost block at that location
-        BlockPos offsetPos = new BlockPos(centerX + offsetX, centerY + offsetY, centerZ + offsetZ);
-        BlockPos topMostOffsetPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, offsetPos);
+        BlockPos topMostOffsetPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, offset.offset(centerX, centerY, centerZ)).above();
 
         // Check if the topmost offset position is valid
         if (isValidSpawnPosition(level, topMostOffsetPos))
@@ -109,7 +77,7 @@ public class SkyblockUtils
         }
 
         // Fallback to finding the nearest valid block
-        return findNearestValidBlock(level, offsetPos);
+        return findNearestValidBlock(level, topMostOffsetPos);
     }
 
     private static boolean isValidSpawnPosition(ServerLevel level, BlockPos position)
@@ -124,24 +92,21 @@ public class SkyblockUtils
         var blockState = level.getBlockState(blockBelow);
 
         // Ensure the block below is suitable for standing on
-        return !(blockState.is(Blocks.WATER) ||
-                blockState.is(Blocks.CHEST) ||
-                blockState.is(BlockTags.LOGS) ||
-                blockState.is(BlockTags.LEAVES));
+        return !(blockState.is(Blocks.WATER) || blockState.is(Blocks.CHEST) || blockState.is(BlockTags.LOGS) || blockState.is(BlockTags.LEAVES));
     }
 
-    public static int[] parseConfigPosition(List<? extends String> offset)
+    public static BlockPos parseConfigPosition(List<? extends String> position)
     {
-        if (offset.size() != 3)
+        if (position.size() != 3)
         {
             throw new IllegalArgumentException("Invalid spawn_offset format. Expected three values.");
         }
         try
         {
-            int x = Integer.parseInt(offset.get(0).trim());
-            int y = Integer.parseInt(offset.get(1).trim());
-            int z = Integer.parseInt(offset.get(2).trim());
-            return new int[]{x, y, z};
+            int x = Integer.parseInt(position.get(0).trim());
+            int y = Integer.parseInt(position.get(1).trim());
+            int z = Integer.parseInt(position.get(2).trim());
+            return new BlockPos(x, y, z);
         } catch (NumberFormatException e)
         {
             throw new IllegalArgumentException("Invalid spawn_offset values. Must be integers.", e);
@@ -177,7 +142,7 @@ public class SkyblockUtils
         }
 
         // Create the island
-        StructureTemplate template = StructureUtils.spawnStructure(level, basePosition, islandTemplate);
+        StructureTemplate template = StructureUtils.generateMainIsland(level, basePosition, islandTemplate);
 
         // Determine the initial spawn position
         BlockPos spawnPosition = determineSpawnPosition(level, template, basePosition, new ArrayList<>(HavenConfig.SpawnOffset));
@@ -218,8 +183,8 @@ public class SkyblockUtils
         {
             TeamManager.removeTeam(level.getServer(), team.getUuid());
             context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
-            int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-            player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
+            BlockPos spawn = parseConfigPosition(HavenConfig.spawnPosition);
+            player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 0, 0);
             IslandManager.deleteIslandArea(level, team.getHomePosition());
             return 1;
         }
@@ -258,9 +223,8 @@ public class SkyblockUtils
             ServerPlayer memberPlayer = level.getServer().getPlayerList().getPlayer(member.getUuid());
             if (memberPlayer != null) {
                 try {
-                    int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-                    HavenSkyblockBuilder.Log("Teleporting " + memberPlayer.getName().getString() + " to " + spawn[0] + ", " + spawn[1] + ", " + spawn[2]);
-                    memberPlayer.teleportTo(level, spawn[0] + 0.5, spawn[1], spawn[2] + 0.5, 0, 0);
+                    BlockPos spawn = parseConfigPosition(HavenConfig.spawnPosition);
+                    memberPlayer.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 0, 0);
                     memberPlayer.resetFallDistance();
                     team.removeMember(member.getUuid());
                     memberPlayer.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.disband_leave", team.getName()));
@@ -403,12 +367,12 @@ public class SkyblockUtils
     {
         ServerPlayer player = context.getSource().getPlayerOrException();
 
-        int[] home = parseConfigPosition(HavenConfig.spawnPosition);
+        BlockPos home = parseConfigPosition(HavenConfig.spawnPosition);
 
         ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
         assert overworld != null;
 
-        player.teleportTo(overworld, home[0] + 0.5, home[1] + 1, home[2] + 0.5, 0, 0);
+        player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, 0, 0);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.island.spawn_teleport"));
         return 1;
@@ -556,8 +520,8 @@ public class SkyblockUtils
 
         try {
             team.removeMember(toKick.getUUID());
-            int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-            toKick.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
+            BlockPos spawn = parseConfigPosition(HavenConfig.spawnPosition);
+            toKick.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 0, 0);
             leader.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kick_success", toKick.getName().getString()));
             toKick.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.kicked", team.getName()));
             return 1;
@@ -597,8 +561,8 @@ public class SkyblockUtils
             targetPlayer.teleportTo(level, targetHome.getX() + 0.5, targetHome.getY(), targetHome.getZ() + 0.5, 0, 0);
             targetPlayer.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.booted_to_own_island"));
         } else {
-            int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-            targetPlayer.teleportTo(level, spawn[0] + 0.5, spawn[1], spawn[2] + 0.5, 0, 0);
+            BlockPos spawn = parseConfigPosition(HavenConfig.spawnPosition);
+            targetPlayer.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 0, 0);
             targetPlayer.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.booted_to_spawn"));
         }
 
@@ -731,8 +695,8 @@ public class SkyblockUtils
             if (team.getMembers().isEmpty())
             {
                 TeamManager.removeTeam(level.getServer(), team.getUuid());
-                int[] spawn = parseConfigPosition(HavenConfig.spawnPosition);
-                player.teleportTo(level, spawn[0], spawn[1], spawn[2], 0, 0);
+                BlockPos spawn = parseConfigPosition(HavenConfig.spawnPosition);
+                player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 0, 0);
                 context.getSource().sendSuccess(() -> Component.translatable("haven_skyblock_builder.team.disband_success", team.getName()), true);
 
                 IslandManager.deleteIslandArea(level, team.getHomePosition());
