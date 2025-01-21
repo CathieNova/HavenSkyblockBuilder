@@ -12,6 +12,10 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnPosition;
     public final ModConfigSpec.ConfigValue<List<? extends String>> additionalStructures;
+    public final ModConfigSpec.ConfigValue<Integer> homeCooldown;
+    public final ModConfigSpec.ConfigValue<Integer> spawnCooldown;
+    public final ModConfigSpec.ConfigValue<Integer> islandCooldown;
+    public final ModConfigSpec.ConfigValue<Integer> visitCooldown;
 
     public CommonConfig(ModConfigSpec.Builder builder) {
         builder.comment("Island Creation Height").push("island_creation_height");
@@ -24,6 +28,7 @@ public class CommonConfig {
         enableNetherSkyblock = builder
                 .comment("If true, it will generate a completely empty Nether world where the only feature is your portal.")
                 .define("enable_nether_skyblock", true);
+        builder.pop();
 
         builder.comment("Spawn on Island Offset")
                 .push("spawn_offset");
@@ -114,5 +119,22 @@ public class CommonConfig {
                         });
         builder.pop();
 
+        builder.comment("Cooldowns").push("cooldowns");
+        homeCooldown = builder
+                .comment("Cooldown time (in seconds) for using the '/havensb island home' command.")
+                .defineInRange("home_cooldown", 30, 0, Integer.MAX_VALUE);
+
+        spawnCooldown = builder
+                .comment("Cooldown time (in seconds) for using the '/havensb spawn' command.")
+                .defineInRange("spawn_cooldown", 5, 0, Integer.MAX_VALUE);
+
+        islandCooldown = builder
+                .comment("Cooldown time (in seconds) for creating a new island.")
+                .defineInRange("island_cooldown", 120, 0, Integer.MAX_VALUE);
+
+        visitCooldown = builder
+                .comment("Cooldown time (in seconds) for visiting another team's island.")
+                .defineInRange("visit_cooldown", 30, 0, Integer.MAX_VALUE);
+        builder.pop();
     }
 }

@@ -25,6 +25,7 @@ import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SkyblockUtils
 {
@@ -116,6 +117,10 @@ public class SkyblockUtils
     public static int createTeam(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!CooldownManager.canUseIsland(player, HavenConfig.islandCooldown) && HavenConfig.islandCooldown > 0)
+        {
+            return 0;
+        }
         ServerLevel level = context.getSource().getLevel();
         String teamName = context.getArgument("name", String.class);
         String islandTemplate = context.getArgument("template", String.class);
@@ -154,6 +159,7 @@ public class SkyblockUtils
 
         // Teleport the player to the initial spawn position
         player.teleportTo(level, spawnPosition.getX() + 0.5, spawnPosition.getY() + 1, spawnPosition.getZ() + 0.5, 0, 0);
+        CooldownManager.setIslandCooldown(player);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.creation_success", teamName));
         return 1;
@@ -243,6 +249,11 @@ public class SkyblockUtils
     public static int goHome(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!CooldownManager.canUseHome(player, HavenConfig.homeCooldown) && HavenConfig.homeCooldown > 0)
+        {
+            return 0;
+        }
+
         ServerLevel level = context.getSource().getLevel();
         Optional<Team> optionalTeam = TeamManager.getAllTeams().stream()
                 .filter(team -> team.getMembers().stream().anyMatch(member -> member.getUuid().equals(player.getUUID())))
@@ -268,6 +279,7 @@ public class SkyblockUtils
         assert overworld != null;
 
         player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
+        CooldownManager.setHomeCooldown(player);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.home_teleport"));
         return 1;
@@ -310,13 +322,17 @@ public class SkyblockUtils
 
     public static int visitIsland(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!CooldownManager.canUseVisit(player, HavenConfig.visitCooldown) && HavenConfig.visitCooldown > 0)
+        {
+            return 0;
+        }
         ServerLevel overworld = context.getSource().getServer().getLevel(ServerLevel.OVERWORLD);
         if (overworld == null) {
             context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.error.teleport_failed"));
             return 0;
         }
 
-        ServerPlayer player = context.getSource().getPlayerOrException();
         String teamName = context.getArgument("team", String.class);
 
         // Find the team by name
@@ -352,6 +368,7 @@ public class SkyblockUtils
 
         try {
             player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, homeRotation.y, homeRotation.x);
+            CooldownManager.setVisitCooldown(player);
             player.resetFallDistance();
             player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.visit_teleport", team.getName()));
         } catch (Exception e) {
@@ -366,6 +383,10 @@ public class SkyblockUtils
     public static int goSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!CooldownManager.canUseSpawn(player, HavenConfig.spawnCooldown) && HavenConfig.spawnCooldown > 0)
+        {
+            return 0;
+        }
 
         BlockPos home = parseConfigPosition(HavenConfig.spawnPosition);
 
@@ -373,6 +394,7 @@ public class SkyblockUtils
         assert overworld != null;
 
         player.teleportTo(overworld, home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, 0, 0);
+        CooldownManager.setSpawnCooldown(player);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.island.spawn_teleport"));
         return 1;

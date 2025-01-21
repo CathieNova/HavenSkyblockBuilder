@@ -79,6 +79,7 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.error.teleport_failed", prefix + "§cFailed to teleport to the island. Please try again...");
         add("haven_skyblock_builder.error.kick_failed", prefix + "§cFailed to kick player from the team. Please try again...");
 
+        add("haven_skyblock_builder.cooldown_message", prefix + "§cYou must wait §6'%s§6' §cseconds before using this command again.");
 
         add("haven_skyblock_builder.reload", prefix + "§aConfig reloaded.");
 
