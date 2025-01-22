@@ -29,7 +29,7 @@ public class IslandScreen extends Screen {
             @Override
             public Style getStyle() {
                 String string = "return null;";
-                return null;
+                return new Style();
             }
 
             @Override
