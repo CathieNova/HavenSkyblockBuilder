@@ -14,6 +14,10 @@ public class HavenConfig
     public static Integer islandDistance;
     public static List<? extends String> spawnPosition;
     public static List<? extends String> additionalStructures;
+    public static Integer homeCooldown;
+    public static Integer spawnCooldown;
+    public static Integer islandCooldown;
+    public static Integer visitCooldown;
 
     public static void bake(ModConfig config)
     {
@@ -23,5 +27,9 @@ public class HavenConfig
         islandDistance = HavenSkyblockBuilder.c_config.islandDistance.get();
         spawnPosition = HavenSkyblockBuilder.c_config.spawnPosition.get();
         additionalStructures = HavenSkyblockBuilder.c_config.additionalStructures.get();
+        homeCooldown = HavenSkyblockBuilder.c_config.homeCooldown.get();
+        spawnCooldown = HavenSkyblockBuilder.c_config.spawnCooldown.get();
+        islandCooldown = HavenSkyblockBuilder.c_config.islandCooldown.get();
+        visitCooldown = HavenSkyblockBuilder.c_config.visitCooldown.get();
     }
 }
