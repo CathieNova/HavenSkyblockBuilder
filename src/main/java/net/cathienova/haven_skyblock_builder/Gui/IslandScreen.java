@@ -19,34 +19,14 @@ import static net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder.MOD_ID;
 
 
 public class IslandScreen extends Screen {
+    private static final Component TITLE = Component.translatable("HevenSkyBlock.IslandScreen");
     private static final ResourceLocation BACKGROUND_LOCATION = ResourceLocation.fromNamespaceAndPath(MOD_ID, "textures/gui/7pp55ytrrpy31.png");
 
     public IslandScreen(Component title) {
         super(title);
     }
     public IslandScreen(){
-        super(new Component() {
-            @Override
-            public Style getStyle() {
-                String string = "return null;";
-                return new Style();
-            }
-
-            @Override
-            public ComponentContents getContents() {
-                return null;
-            }
-
-            @Override
-            public List<Component> getSiblings() {
-                return List.of();
-            }
-
-            @Override
-            public FormattedCharSequence getVisualOrderText() {
-                return null;
-            }
-        });
+        super(TITLE);
     }
     @Override
     protected void init() {
