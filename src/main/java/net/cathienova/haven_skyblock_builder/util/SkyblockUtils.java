@@ -139,6 +139,7 @@ public class SkyblockUtils
 
         // Determine the next available island position
         BlockPos basePosition = TeamManager.findNextAvailableIslandPosition(level);
+        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.finding_island_location"));
 
         if (basePosition == null)
         {
