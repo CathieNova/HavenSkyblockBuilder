@@ -18,6 +18,7 @@ public class HavenConfig
     public static Integer spawnCooldown;
     public static Integer islandCooldown;
     public static Integer visitCooldown;
+    public static List<String> blacklistBiomesForIslands;
 
     public static void bake(ModConfig config)
     {
@@ -31,5 +32,6 @@ public class HavenConfig
         spawnCooldown = HavenSkyblockBuilder.c_config.spawnCooldown.get();
         islandCooldown = HavenSkyblockBuilder.c_config.islandCooldown.get();
         visitCooldown = HavenSkyblockBuilder.c_config.visitCooldown.get();
+        blacklistBiomesForIslands = HavenSkyblockBuilder.c_config.blacklistBiomesForIslands.get();
     }
 }

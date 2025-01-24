@@ -75,6 +75,7 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.can_not_visit_own_island", prefix + "§cYou cannot visit your own island.");
         // using ' with colors will not display colors after ' so we need a different approach
         add("haven_skyblock_builder.team.island_information", prefix + "§aTeam: §6'§5%s§6'§a\nLeader: §6'§5%s§6'§a\nAllow visit: %s\n§aHome Position: §5%s§r\n§aMembers: §5%s");
+        add("haven_skyblock_builder.team.finding_island_location", prefix + "§aFinding a suitable location for the island...");
 
         add("haven_skyblock_builder.error.teleport_failed", prefix + "§cFailed to teleport to the island. Please try again...");
         add("haven_skyblock_builder.error.kick_failed", prefix + "§cFailed to kick player from the team. Please try again...");

@@ -4,8 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.cathienova.haven_skyblock_builder.config.HavenConfig;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.File;
@@ -141,7 +143,9 @@ public class TeamManager {
                         continue;
                     }
 
-                    if (isPositionAvailable(candidate, islandDistance) && noNearbyBlocks(level, candidate, checkRadius)) {
+                    if (isPositionAvailable(candidate, islandDistance) &&
+                            noNearbyBlocks(level, candidate, checkRadius) &&
+                            isBiomeAllowed(level, candidate)) {
                         return candidate;
                     }
                 }
@@ -152,6 +156,16 @@ public class TeamManager {
                 return null;
             }
         }
+    }
+
+    private static boolean isBiomeAllowed(ServerLevel level, BlockPos position) {
+        ResourceKey<Biome> biomeKey = level.getBiome(position).unwrapKey().orElse(null);
+        if (biomeKey == null) {
+            return false;
+        }
+
+        String biomeName = biomeKey.location().toString();
+        return !HavenConfig.blacklistBiomesForIslands.contains(biomeName);
     }
 
     // Helper method to check if there are blocks nearby

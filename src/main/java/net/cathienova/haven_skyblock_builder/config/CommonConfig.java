@@ -16,6 +16,7 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<Integer> spawnCooldown;
     public final ModConfigSpec.ConfigValue<Integer> islandCooldown;
     public final ModConfigSpec.ConfigValue<Integer> visitCooldown;
+    public final ModConfigSpec.ConfigValue<List<String>> blacklistBiomesForIslands;
 
     public CommonConfig(ModConfigSpec.Builder builder) {
         builder.comment("Island Creation Height").push("island_creation_height");
@@ -136,5 +137,21 @@ public class CommonConfig {
                 .comment("Cooldown time (in seconds) for visiting another team's island.")
                 .defineInRange("visit_cooldown", 30, 0, Integer.MAX_VALUE);
         builder.pop();
+
+        List<String> blacklistBiomes = List.of(
+                "minecraft:ocean", "minecraft:deep_ocean", "minecraft:warm_ocean", "minecraft:lukewarm_ocean",
+                "minecraft:deep_lukewarm_ocean", "minecraft:cold_ocean", "minecraft:deep_cold_ocean",
+                "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean", "minecraft:jagged_peaks",
+                "minecraft:frozen_peaks", "minecraft:grove", "minecraft:snowy_slopes", "minecraft:windswept_hills",
+                "minecraft:frozen_river", "minecraft:snowy_beach", "minecraft:snowy_plains", "minecraft:ice_spikes",
+                "minecraft:badlands", "minecraft:eroded_badlands");
+
+        builder.comment("Blacklist Biomes for Islands").push("blacklist_biomes_for_islands");
+        blacklistBiomesForIslands = builder
+                .comment("Biomes that are blacklisted for places the island is generated.")
+                .define("blacklist_biomes_for_islands", blacklistBiomes);
+        builder.pop();
+
+
     }
 }
