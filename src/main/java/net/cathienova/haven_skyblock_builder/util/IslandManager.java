@@ -14,7 +14,7 @@ public class IslandManager {
     private static final Queue<BlockPos> pendingPopulation = new ArrayDeque<>();
 
     // This method causes lag but it works, it has to be improved later on..
-    public static void deleteIslandArea(ServerLevel level, BlockPos teamCenter) {
+    /*public static void deleteIslandArea(ServerLevel level, BlockPos teamCenter) {
         int radius = 250;
 
         HavenSkyblockBuilder.Log("Preparing to delete island area around " + teamCenter + " with radius " + radius);
@@ -70,5 +70,5 @@ public class IslandManager {
                 HavenSkyblockBuilder.Log("Island area deletion completed.");
             }
         });
-    }
+    }*/
 }

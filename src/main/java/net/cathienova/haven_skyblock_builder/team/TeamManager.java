@@ -128,7 +128,6 @@ public class TeamManager {
     public static BlockPos findNextAvailableIslandPosition(ServerLevel level) {
         int layer = 1;
         int islandDistance = HavenConfig.islandDistance;
-        int checkRadius = 50;
 
         while (true) {
             for (int x = -layer * islandDistance; x <= layer * islandDistance; x += islandDistance) {
@@ -144,7 +143,6 @@ public class TeamManager {
                     }
 
                     if (isPositionAvailable(candidate, islandDistance) &&
-                            noNearbyBlocks(level, candidate, checkRadius) &&
                             isBiomeAllowed(level, candidate)) {
                         return candidate;
                     }

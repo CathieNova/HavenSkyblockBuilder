@@ -1,26 +1,27 @@
 package net.cathienova.haven_skyblock_builder.commands;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.cathienova.haven_skyblock_builder.team.Team;
 import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.cathienova.haven_skyblock_builder.util.SkyblockUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 
 import java.io.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ModCommands
 {
@@ -98,8 +99,10 @@ public class ModCommands
         admin.requires(source -> source.hasPermission(2));
         admin.then(Commands.literal("reload")
                 .executes(ModCommands::reloadConfig));
+        admin.then(Commands.literal("listteams")
+                .executes(SkyblockUtils::adminListTeams));
         admin.then(Commands.literal("addmember")
-                .then(Commands.argument("team", StringArgumentType.word())
+                .then(Commands.argument("team", StringArgumentType.greedyString())
                         .suggests(CommandSuggestions::suggestTeams)
                         .then(Commands.argument("player", EntityArgument.player())
                                 .suggests(CommandSuggestions::suggestPlayers)
@@ -110,11 +113,20 @@ public class ModCommands
                         .then(Commands.argument("player", EntityArgument.player())
                                 .suggests(CommandSuggestions::suggestTeamMembers)
                                 .executes(SkyblockUtils::removeMember))));
+        admin.then(Commands.literal("removeteam")
+                .then(Commands.argument("team", StringArgumentType.greedyString())
+                        .suggests(CommandSuggestions::suggestTeams)
+                        .executes(SkyblockUtils::adminRemoveTeam)));
         admin.then(Commands.literal("changename")
                 .then(Commands.argument("team", StringArgumentType.word())
                         .suggests(CommandSuggestions::suggestTeams)
                         .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(SkyblockUtils::adminChangeTeamName))));
+        admin.then(Commands.literal("generatejsons")
+                .then(Commands.literal("structures")
+                        .executes(ModCommands::generateStructureList))
+                .then(Commands.literal("biomes")
+                        .executes(ModCommands::generateBiomeList)));
         command.then(admin);
 
         dispatcher.register(command);
@@ -127,4 +139,71 @@ public class ModCommands
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.reload"));
         return -1;
     }
+
+    private static int generateStructureList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+
+        List<String> structureList = new ArrayList<>();
+        server.registryAccess().registryOrThrow(Registries.STRUCTURE).entrySet().forEach(entry -> {
+            ResourceLocation key = entry.getKey().location();
+            structureList.add(key.toString());
+        });
+
+        structureList.sort(String::compareToIgnoreCase);
+
+        // Define the target directory and create it if it doesn't exist
+        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            return 0;
+        }
+
+        // Define the output file
+        File outputFile = new File(outputDir, "structures_list.json");
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            gson.toJson(structureList, writer);
+            source.sendSuccess(() -> Component.translatable("Generated structure list to: " + outputFile.getAbsolutePath()), true);
+        } catch (IOException e) {
+            source.sendFailure(Component.translatable("Failed to write structure list: " + e.getMessage()));
+        }
+
+        return 1;
+    }
+
+    private static int generateBiomeList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+
+        List<String> biomeList = new ArrayList<>();
+        server.registryAccess().registryOrThrow(Registries.BIOME).entrySet().forEach(entry -> {
+            ResourceLocation key = entry.getKey().location();
+            biomeList.add(key.toString());
+        });
+
+        biomeList.sort(String::compareToIgnoreCase);
+
+        // Define the target directory and create it if it doesn't exist
+        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            return 0;
+        }
+
+        // Define the output file
+        File outputFile = new File(outputDir, "biomes_list.json");
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            gson.toJson(biomeList, writer);
+            source.sendSuccess(() -> Component.translatable("Generated biome list to: " + outputFile.getAbsolutePath()), true);
+        } catch (IOException e) {
+            source.sendFailure(Component.translatable("Failed to write biome list: " + e.getMessage()));
+        }
+
+        return 1;
+    }
+
 }
