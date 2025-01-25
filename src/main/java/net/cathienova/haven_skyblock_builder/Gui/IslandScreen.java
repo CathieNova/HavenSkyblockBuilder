@@ -1,5 +1,7 @@
 package net.cathienova.haven_skyblock_builder.Gui;
 
+import net.cathienova.haven_skyblock_builder.team.Team;
+import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,13 +15,15 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import static net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder.MOD_ID;
 
 
 public class IslandScreen extends Screen {
-    private static final Component TITLE = Component.translatable("HevenSkyBlock.IslandScreen");
+    private static final Component TITLE = Component.translatable("HeavenSkyBlock.IslandScreen");
     private static final ResourceLocation BACKGROUND_LOCATION = ResourceLocation.fromNamespaceAndPath(MOD_ID, "textures/gui/hsb_gui.png");
 
     public IslandScreen(Component title) {
@@ -61,7 +65,14 @@ public class IslandScreen extends Screen {
 
         // Then the widgets if this is a direct child of the Screen
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.blit(BACKGROUND_LOCATION,graphics.guiWidth()/2,graphics.guiHeight()/2,0,0,256,256);
+        graphics.blit(BACKGROUND_LOCATION,graphics.guiWidth()/2-256/3,graphics.guiHeight()/2-256/3,0,0,256,256);
+        assert minecraft != null;
+        int i = 0;
+        Collection<Team> teams = TeamManager.getAllTeams();
+        for (Team team : teams) {
+            graphics.drawCenteredString(minecraft.font, team.getName(), graphics.guiWidth() / 3+10, graphics.guiHeight() / 2+(-10*i), 0);
+            i++;
+        }
         // Render things after widgets (tooltips)
     }
 }
