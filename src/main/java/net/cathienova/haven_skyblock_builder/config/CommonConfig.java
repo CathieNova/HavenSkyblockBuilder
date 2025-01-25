@@ -38,6 +38,7 @@ public class CommonConfig {
         keepInventoryOnIslandLeave = builder
                 .comment("If true, players will keep their inventory when leaving the island.")
                 .define("keep_inventory_on_island_leave", true);
+        builder.pop();
 
         builder.comment("Spawn on Island Offset")
                 .push("spawn_on_island_offset");
