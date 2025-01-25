@@ -42,9 +42,13 @@ public class Team {
         return leader;
     }
 
-    public String getLeaderName()
-    {
-        return Objects.requireNonNull(members.stream().filter(member -> member.getUuid().equals(leader)).findFirst().orElse(null)).getName();
+    public String getLeaderName() {
+        Member leaderMember = members.stream()
+                .filter(member -> member.getUuid().equals(leader))
+                .findFirst()
+                .orElse(null);
+
+        return leaderMember != null ? leaderMember.getName() : "Unknown";
     }
 
     public void setLeader(UUID leader) {

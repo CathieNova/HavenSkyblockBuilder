@@ -6,7 +6,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class NetworkHandler
 {
-    // DO NOT CONVERT the lambdas to method reference. The server will crash loading client code otherwise.
+    // Never convert the lambdas to method references. It will crash the server when loading client code!
     @SuppressWarnings("Convert2MethodRef")
     public static void register(PayloadRegistrar registrar) {
         registrar.commonToClient(SkyblockWorldMessage.TYPE, SkyblockWorldMessage.STREAM_CODEC, (msg, ctx) -> ClientMessageHandler.handleSkyblockWorldMessage(ctx));

@@ -59,7 +59,7 @@ public class EventHandler
                 Team team = TeamManager.getTeamByPlayer(player.getUUID());
                 if (team == null)
                 {
-                    BlockPos pos = SkyblockUtils.findNearestValidBlock((ServerLevel) player.level(), new BlockPos(0, 71, 0));
+                    BlockPos pos = new BlockPos(0, 71, 0);
                     player.teleportTo(pos.getX() + 0.5f, pos.getY() + 1, pos.getZ() + 0.5f);
                     player.sendSystemMessage(Component.translatable("haven_skyblock_builder.message.skyblock_spawn"));
                 }

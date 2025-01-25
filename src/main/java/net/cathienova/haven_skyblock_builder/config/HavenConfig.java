@@ -4,13 +4,13 @@ import net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder;
 import net.neoforged.fml.config.ModConfig;
 
 import java.util.List;
-import java.util.Map;
 
 public class HavenConfig
 {
     public static int islandCreationHeight;
     public static boolean enableNetherSkyblock;
-    public static List<? extends String> SpawnOffset;
+    public static boolean keepInventoryOnIslandLeave;
+    public static List<? extends String> islandSpecificOffsets;
     public static Integer islandDistance;
     public static List<? extends String> spawnPosition;
     public static List<? extends String> additionalStructures;
@@ -18,12 +18,16 @@ public class HavenConfig
     public static Integer spawnCooldown;
     public static Integer islandCooldown;
     public static Integer visitCooldown;
+    public static List<? extends String> blacklistBiomesForIslands;
+    public static String overworldLayerGeneration;
+    public static String netherLayerGeneration;
 
     public static void bake(ModConfig config)
     {
         islandCreationHeight = HavenSkyblockBuilder.c_config.islandCreationHeight.get();
         enableNetherSkyblock = HavenSkyblockBuilder.c_config.enableNetherSkyblock.get();
-        SpawnOffset = HavenSkyblockBuilder.c_config.spawnOffset.get();
+        keepInventoryOnIslandLeave = HavenSkyblockBuilder.c_config.keepInventoryOnIslandLeave.get();
+        islandSpecificOffsets = HavenSkyblockBuilder.c_config.islandSpecificOffsets.get();
         islandDistance = HavenSkyblockBuilder.c_config.islandDistance.get();
         spawnPosition = HavenSkyblockBuilder.c_config.spawnPosition.get();
         additionalStructures = HavenSkyblockBuilder.c_config.additionalStructures.get();
@@ -31,5 +35,8 @@ public class HavenConfig
         spawnCooldown = HavenSkyblockBuilder.c_config.spawnCooldown.get();
         islandCooldown = HavenSkyblockBuilder.c_config.islandCooldown.get();
         visitCooldown = HavenSkyblockBuilder.c_config.visitCooldown.get();
+        blacklistBiomesForIslands = HavenSkyblockBuilder.c_config.blacklistBiomesForIslands.get();
+        overworldLayerGeneration = HavenSkyblockBuilder.c_config.overworldLayerGeneration.get();
+        netherLayerGeneration = HavenSkyblockBuilder.c_config.netherLayerGeneration.get();
     }
 }

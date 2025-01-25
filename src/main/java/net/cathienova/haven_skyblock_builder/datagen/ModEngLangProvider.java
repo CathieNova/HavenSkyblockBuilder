@@ -59,6 +59,7 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.invite_already_sent", prefix + "§cAn invitation has already been sent to §6'§5%s§6'§c.");
         add("haven_skyblock_builder.team.name_changed", prefix + "§aTeam name changed to §6'§5%s§6'§a.");
         add("haven_skyblock_builder.team.list_entry", "§6'§5%s§6' §a- Leader: §6'§5%s§6'§a, Members: %s");
+        add("haven_skyblock_builder.admin.list_entry", "§6'§5%s§6'");
         add("haven_skyblock_builder.team.visit_disabled", prefix + "§cVisiting this island is now disabled.");
         add("haven_skyblock_builder.team.visit_enabled", prefix + "§aVisiting this island is now enabled.");
         add("haven_skyblock_builder.team.visit_teleport", prefix + "§aTeleported to §6'§5%s§6'§a's island.");
@@ -75,6 +76,8 @@ public class ModEngLangProvider extends LanguageProvider
         add("haven_skyblock_builder.team.can_not_visit_own_island", prefix + "§cYou cannot visit your own island.");
         // using ' with colors will not display colors after ' so we need a different approach
         add("haven_skyblock_builder.team.island_information", prefix + "§aTeam: §6'§5%s§6'§a\nLeader: §6'§5%s§6'§a\nAllow visit: %s\n§aHome Position: §5%s§r\n§aMembers: §5%s");
+        add("haven_skyblock_builder.team.finding_island_location", prefix + "§aFinding a suitable location for the island...");
+        add("haven_skyblock_builder.team.remove_success", prefix + "§aTeam §6'§5%s§6' §aremoved successfully.");
 
         add("haven_skyblock_builder.error.teleport_failed", prefix + "§cFailed to teleport to the island. Please try again...");
         add("haven_skyblock_builder.error.kick_failed", prefix + "§cFailed to kick player from the team. Please try again...");

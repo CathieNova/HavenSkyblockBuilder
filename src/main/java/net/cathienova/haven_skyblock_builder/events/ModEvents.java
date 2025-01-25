@@ -35,17 +35,16 @@ public class ModEvents
             try {
                 markerFile.createNewFile();
 
+                generateSpawnIsland();
+
                 StructureUtils.createSpawnIsland(level, new BlockPos(-3, 68, -3), "spawn_island");
             } catch (IOException e) {
                 throw new RuntimeException("Failed to create marker file or copy files", e);
             }
         }
     }
-
-    public static void generateDefaultTemplates()
+    public static void generateSpawnIsland()
     {
-        Path additionalIslandsPath = new File("config/HavenSkyblockBuilder/AdditionalIslands").toPath();
-        Path templatesPath = new File("config/HavenSkyblockBuilder/Templates").toPath();
         Path spawnIslandPath = new File("config/HavenSkyblockBuilder").toPath();
 
         if (!Files.exists(spawnIslandPath))
@@ -59,6 +58,14 @@ public class ModEvents
                 HavenSkyblockBuilder.Log("Failed to create SpawnIsland folder: " + e.getMessage());
             }
         }
+    }
+
+    public static void generateDefaultTemplates()
+    {
+        Path additionalIslandsPath = new File("config/HavenSkyblockBuilder/AdditionalIslands").toPath();
+        Path templatesPath = new File("config/HavenSkyblockBuilder/Templates").toPath();
+
+        generateSpawnIsland();
 
         if (!Files.exists(additionalIslandsPath))
         {
