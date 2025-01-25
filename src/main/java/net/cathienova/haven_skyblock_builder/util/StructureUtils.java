@@ -86,7 +86,6 @@ public class StructureUtils
 
                 try
                 {
-                    HavenSkyblockBuilder.Log("Spawning additional structure '" + structureName + "' at " + structurePosition);
                     Path structurePath = Path.of("config/HavenSkyblockBuilder/AdditionalIslands", structureName + ".nbt");
                     CompoundTag nbtData = NbtIo.readCompressed(structurePath, NbtAccounter.unlimitedHeap());
 

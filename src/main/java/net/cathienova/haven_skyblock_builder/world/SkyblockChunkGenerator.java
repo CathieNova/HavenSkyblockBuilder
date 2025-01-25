@@ -69,7 +69,7 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
             super.applyCarvers(pLevel, pSeed, pRandom, pBiomeManager, pStructureManager, pChunk, pStep);
         }
     }
-    // Filter structures
+
     @Override
     public ChunkGeneratorStructureState createState(HolderLookup<StructureSet> lookup, RandomState pRandomState, long pSeed)
     {

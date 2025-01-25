@@ -31,7 +31,7 @@ public class ModCommands
         command.then(Commands.literal("spawn")
                 .executes(SkyblockUtils::goSpawn));
 
-        // Island-based commands
+        // Island commands
         LiteralArgumentBuilder<CommandSourceStack> island = Commands.literal("island");
         island.then(Commands.literal("create")
                 .executes(context ->
@@ -52,7 +52,7 @@ public class ModCommands
         island.then(Commands.literal("info").executes(SkyblockUtils::islandInfo));
         command.then(island);
 
-        // Team-based commands
+        // Team commands
         LiteralArgumentBuilder<CommandSourceStack> team = Commands.literal("team");
         team.then(Commands.literal("list").executes(SkyblockUtils::listTeams));
         team.then(Commands.literal("invite")
@@ -73,6 +73,7 @@ public class ModCommands
                         .executes(SkyblockUtils::visitIsland)));
         command.then(team);
 
+        // Leader commands
         LiteralArgumentBuilder<CommandSourceStack> leader = Commands.literal("leader");
         leader.then(Commands.literal("sethome").executes(SkyblockUtils::setHome));
         leader.then(Commands.literal("disband")
@@ -152,14 +153,12 @@ public class ModCommands
 
         structureList.sort(String::compareToIgnoreCase);
 
-        // Define the target directory and create it if it doesn't exist
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
             return 0;
         }
 
-        // Define the output file
         File outputFile = new File(outputDir, "structures_list.json");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -185,14 +184,12 @@ public class ModCommands
 
         biomeList.sort(String::compareToIgnoreCase);
 
-        // Define the target directory and create it if it doesn't exist
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
             return 0;
         }
 
-        // Define the output file
         File outputFile = new File(outputDir, "biomes_list.json");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 

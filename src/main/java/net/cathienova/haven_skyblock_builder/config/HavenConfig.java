@@ -10,7 +10,7 @@ public class HavenConfig
     public static int islandCreationHeight;
     public static boolean enableNetherSkyblock;
     public static boolean keepInventoryOnIslandLeave;
-    public static List<? extends String> SpawnOffset;
+    public static List<? extends String> islandSpecificOffsets;
     public static Integer islandDistance;
     public static List<? extends String> spawnPosition;
     public static List<? extends String> additionalStructures;
@@ -27,7 +27,7 @@ public class HavenConfig
         islandCreationHeight = HavenSkyblockBuilder.c_config.islandCreationHeight.get();
         enableNetherSkyblock = HavenSkyblockBuilder.c_config.enableNetherSkyblock.get();
         keepInventoryOnIslandLeave = HavenSkyblockBuilder.c_config.keepInventoryOnIslandLeave.get();
-        SpawnOffset = HavenSkyblockBuilder.c_config.spawnOffset.get();
+        islandSpecificOffsets = HavenSkyblockBuilder.c_config.islandSpecificOffsets.get();
         islandDistance = HavenSkyblockBuilder.c_config.islandDistance.get();
         spawnPosition = HavenSkyblockBuilder.c_config.spawnPosition.get();
         additionalStructures = HavenSkyblockBuilder.c_config.additionalStructures.get();

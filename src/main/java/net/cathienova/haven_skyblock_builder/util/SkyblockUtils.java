@@ -52,7 +52,7 @@ public class SkyblockUtils
         return basePos;
     }
 
-    private static BlockPos determineSpawnPosition(ServerLevel level, StructureTemplate template, BlockPos basePos, List<String> offsetList)
+    private static BlockPos determineSpawnPosition(ServerLevel level, StructureTemplate template, BlockPos basePos, String islandName)
     {
         Vec3i size = template.getSize();
 
@@ -61,19 +61,62 @@ public class SkyblockUtils
         int centerY = basePos.getY() + size.getY() / 2;
         int centerZ = basePos.getZ() + size.getZ() / 2;
 
-        // Parse offset from config
-        BlockPos offset = parseConfigPosition(offsetList);
+        // Get island-specific offset
+        BlockPos offset = getIslandSpecificOffset(islandName);
 
-        // Calculate the adjusted position using offset
+        // Calculate adjusted position
         BlockPos adjustedPos = new BlockPos(centerX + offset.getX(), centerY + offset.getY(), centerZ + offset.getZ());
 
-        // Validate adjusted position, fall back to nearest valid if necessary
+        // Validate adjusted position
         if (isValidSpawnPosition(level, adjustedPos))
         {
             return adjustedPos;
         }
 
         return findNearestValidBlock(level, adjustedPos);
+    }
+
+    private static int getIslandSpecificLookDirection(String islandName)
+    {
+        List<? extends String> offsets = HavenConfig.islandSpecificOffsets;
+
+        for (String entry : offsets)
+        {
+            String[] parts = entry.split("=");
+            if (parts[0].equalsIgnoreCase(islandName))
+            {
+                String[] values = parts[1].split(",");
+                if (values.length == 4)
+                {
+                    return Integer.parseInt(values[3].trim());
+                }
+            }
+        }
+
+        // Default look direction (0 if not specified)
+        return 0;
+    }
+
+    private static BlockPos getIslandSpecificOffset(String islandName)
+    {
+        List<? extends String> offsets = HavenConfig.islandSpecificOffsets;
+
+        for (String entry : offsets)
+        {
+            String[] parts = entry.split("=");
+            if (parts[0].equalsIgnoreCase(islandName))
+            {
+                String[] coordinates = parts[1].split(",");
+                return new BlockPos(
+                        Integer.parseInt(coordinates[0].trim()),
+                        Integer.parseInt(coordinates[1].trim()),
+                        Integer.parseInt(coordinates[2].trim())
+                );
+            }
+        }
+
+        // Default offset
+        return new BlockPos(0, 1, 0);
     }
 
     private static boolean isValidSpawnPosition(ServerLevel level, BlockPos position)
@@ -146,7 +189,8 @@ public class SkyblockUtils
         StructureTemplate template = StructureUtils.generateMainIsland(level, basePosition, islandTemplate);
 
         // Determine the initial spawn position
-        BlockPos spawnPosition = determineSpawnPosition(level, template, basePosition, new ArrayList<>(HavenConfig.SpawnOffset));
+        BlockPos spawnPosition = determineSpawnPosition(level, template, basePosition, islandTemplate);
+        int lookDirection = getIslandSpecificLookDirection(islandTemplate);
 
         // Create the team and set the home position
         Team team = new Team(teamName, player.getUUID(), true, spawnPosition, new Vec2(player.getYRot(), player.getXRot()));
@@ -154,7 +198,7 @@ public class SkyblockUtils
         TeamManager.addTeam(level.getServer(), team);
 
         // Teleport the player to the initial spawn position
-        player.teleportTo(level, spawnPosition.getX() + 0.5, spawnPosition.getY() + 1, spawnPosition.getZ() + 0.5, 0, 0);
+        player.teleportTo(level, spawnPosition.getX() + 0.5, spawnPosition.getY() + 1, spawnPosition.getZ() + 0.5, lookDirection, 0);
         CooldownManager.setIslandCooldown(player);
         player.resetFallDistance();
         player.sendSystemMessage(Component.translatable("haven_skyblock_builder.team.creation_success", teamName));

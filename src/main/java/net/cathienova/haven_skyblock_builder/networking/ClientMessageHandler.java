@@ -5,7 +5,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class ClientMessageHandler
 {
-    // Removes the black sky/fog that appears when the player is below y=62
+    // Removes the underground fog in the skyblock world
     public static void handleSkyblockWorldMessage(IPayloadContext ctx) {
         ctx.enqueueWork(ClientHandler::disableVoidFogRendering);
     }

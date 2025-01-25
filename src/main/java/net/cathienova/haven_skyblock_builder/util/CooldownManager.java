@@ -16,10 +16,8 @@ public class CooldownManager {
         cooldowns.putIfAbsent(player.getUUID(), new ConcurrentHashMap<>());
         ConcurrentHashMap<String, Long> playerCooldowns = cooldowns.get(player.getUUID());
 
-        // Get the last usage time for the command
         long lastUsed = playerCooldowns.getOrDefault(cooldownType, 0L);
 
-        // Check if enough time has passed since the last usage
         if (currentTime - lastUsed < cooldownTime * 1000L) {
             long remainingTime = (cooldownTime * 1000L - (currentTime - lastUsed)) / 1000L;
             player.sendSystemMessage(Component.translatable("haven_skyblock_builder.cooldown_message", remainingTime));

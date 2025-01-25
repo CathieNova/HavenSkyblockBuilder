@@ -9,7 +9,7 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<Integer> islandCreationHeight;
     public final ModConfigSpec.ConfigValue<Boolean> enableNetherSkyblock;
     public final ModConfigSpec.ConfigValue<Boolean> keepInventoryOnIslandLeave;
-    public final ModConfigSpec.ConfigValue<List<? extends String>> spawnOffset;
+    public final ModConfigSpec.ConfigValue<List<? extends String>> islandSpecificOffsets;
     public final ModConfigSpec.ConfigValue<Integer> islandDistance;
     public final ModConfigSpec.ConfigValue<List<? extends String>> spawnPosition;
     public final ModConfigSpec.ConfigValue<List<? extends String>> additionalStructures;
@@ -40,20 +40,41 @@ public class CommonConfig {
                 .define("keep_inventory_on_island_leave", true);
         builder.pop();
 
-        builder.comment("Spawn on Island Offset")
-                .push("spawn_on_island_offset");
-        spawnOffset = builder
+        builder.comment("Island-Specific Spawn Offsets").push("island_specific_offsets");
+        islandSpecificOffsets = builder
                 .comment("""
-        The X, Y, Z offset from the center of the island where the player will spawn.
-        Example offsets:
-        - North: [0, 1, -5] (5 blocks north of center)
-        - South: [0, 1, 5] (5 blocks south of center)
-        - West: [-5, 1, 0] (5 blocks west of center)
-        - East: [5, 1, 0] (5 blocks east of center)
-        Default is [0, 1, 0] (center with 1 block height).
+        The spawn offsets and look direction for specific islands. 
+        Format: "islandName=x,y,z,lookDirection".
+        Example: [
+          "classic_island=0,1,0,90",  // Look east
+          "jungle_island=5,1,-3,180" // Look south
+        ]
         """)
-                .defineList("spawn_on_island_offset", List.of("0", "1", "0"), obj -> obj instanceof String && ((String) obj).matches("-?\\d+"));
-
+                .defineList("island_specific_offsets",
+                        List.of("classic_island=1,1,-3,-90"),
+                        obj -> {
+                            if (!(obj instanceof String)) {
+                                return false;
+                            }
+                            String value = (String) obj;
+                            String[] parts = value.split("=");
+                            if (parts.length != 2) {
+                                return false;
+                            }
+                            String[] values = parts[1].split(",");
+                            if (values.length != 4) {
+                                return false;
+                            }
+                            try {
+                                Integer.parseInt(values[0]); // x
+                                Integer.parseInt(values[1]); // y
+                                Integer.parseInt(values[2]); // z
+                                Integer.parseInt(values[3]); // lookDirection
+                                return true;
+                            } catch (NumberFormatException e) {
+                                return false;
+                            }
+                        });
         builder.pop();
 
         builder.comment("Island Distance").push("island_distance");
@@ -113,19 +134,19 @@ public class CommonConfig {
         builder.comment("Cooldowns").push("cooldowns");
         homeCooldown = builder
                 .comment("Cooldown time (in seconds) for using the '/havensb island home' command.")
-                .defineInRange("cooldowns", 30, 0, Integer.MAX_VALUE);
+                .defineInRange("home_cooldown", 30, 0, Integer.MAX_VALUE);
 
         spawnCooldown = builder
                 .comment("Cooldown time (in seconds) for using the '/havensb spawn' command.")
-                .defineInRange("cooldowns", 5, 0, Integer.MAX_VALUE);
+                .defineInRange("spawn_cooldown", 5, 0, Integer.MAX_VALUE);
 
         islandCooldown = builder
                 .comment("Cooldown time (in seconds) for creating a new island.")
-                .defineInRange("cooldowns", 120, 0, Integer.MAX_VALUE);
+                .defineInRange("create_cooldown", 120, 0, Integer.MAX_VALUE);
 
         visitCooldown = builder
                 .comment("Cooldown time (in seconds) for visiting another team's island.")
-                .defineInRange("cooldowns", 30, 0, Integer.MAX_VALUE);
+                .defineInRange("visit_cooldown", 30, 0, Integer.MAX_VALUE);
         builder.pop();
 
         builder.comment("Blacklist Biomes for Islands").push("blacklist_biomes_for_islands");
@@ -140,11 +161,11 @@ public class CommonConfig {
                         obj -> obj instanceof String && ((String) obj).matches("minecraft:[a-z_]+"));
         builder.pop();
 
-        String overworldLayerConfig = "minecraft:bedrock,30*minecraft:stone,20*minecraft:dirt,minecraft:grass_block";
+        String overworldLayerConfig = "";
 
         builder.comment("Overworld Layer Configuration").push("overworld_layer_config");
         overworldLayerGeneration = builder
-                .comment("Defines the block layers for the Overworld, max 384 layers, format: block1,count*block2,block3")
+                .comment("Defines the block layers for the Overworld (can be empty), max 384 layers, format: block1,count*block2,block3")
                 .define("overworld_layer_config", overworldLayerConfig);
         builder.pop();
 
@@ -152,7 +173,7 @@ public class CommonConfig {
 
         builder.comment("Nether Layer Configuration").push("nether_layer_config");
         netherLayerGeneration = builder
-                .comment("Defines the block layers for the Nether, max 256 layers, format: block1,count*block2,block3")
+                .comment("Defines the block layers for the Nether (can be empty), max 256 layers, format: block1,count*block2,block3")
                 .define("nether_layer_config", netherLayerConfig);
         builder.pop();
     }
