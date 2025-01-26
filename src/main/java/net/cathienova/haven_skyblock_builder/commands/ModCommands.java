@@ -127,7 +127,11 @@ public class ModCommands
                 .then(Commands.literal("structures")
                         .executes(ModCommands::generateStructureList))
                 .then(Commands.literal("biomes")
-                        .executes(ModCommands::generateBiomeList)));
+                        .executes(ModCommands::generateBiomeList))
+                .then(Commands.literal("features")
+                        .executes(ModCommands::generateFeatureList))
+                .then(Commands.literal("carvers")
+                        .executes(ModCommands::generateCarverList)));
         command.then(admin);
 
         dispatcher.register(command);
@@ -203,4 +207,65 @@ public class ModCommands
         return 1;
     }
 
+    private static int generateFeatureList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+
+        List<String> featureList = new ArrayList<>();
+        server.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).entrySet().forEach(entry -> {
+            ResourceLocation key = entry.getKey().location();
+            featureList.add(key.toString());
+        });
+
+        featureList.sort(String::compareToIgnoreCase);
+
+        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            return 0;
+        }
+
+        File outputFile = new File(outputDir, "features_list.json");
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            gson.toJson(featureList, writer);
+            source.sendSuccess(() -> Component.translatable("Generated feature list to: " + outputFile.getAbsolutePath()), true);
+        } catch (IOException e) {
+            source.sendFailure(Component.translatable("Failed to write feature list: " + e.getMessage()));
+        }
+
+        return 1;
+    }
+
+    private static int generateCarverList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+
+        List<String> carverList = new ArrayList<>();
+        server.registryAccess().registryOrThrow(Registries.CONFIGURED_CARVER).entrySet().forEach(entry -> {
+            ResourceLocation key = entry.getKey().location();
+            carverList.add(key.toString());
+        });
+
+        carverList.sort(String::compareToIgnoreCase);
+
+        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            return 0;
+        }
+
+        File outputFile = new File(outputDir, "carvers_list.json");
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            gson.toJson(carverList, writer);
+            source.sendSuccess(() -> Component.translatable("Generated carver list to: " + outputFile.getAbsolutePath()), true);
+        } catch (IOException e) {
+            source.sendFailure(Component.translatable("Failed to write carver list: " + e.getMessage()));
+        }
+
+        return 1;
+    }
 }
