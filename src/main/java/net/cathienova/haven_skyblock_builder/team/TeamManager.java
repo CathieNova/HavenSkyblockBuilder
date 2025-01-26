@@ -3,6 +3,7 @@ package net.cathienova.haven_skyblock_builder.team;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.cathienova.haven_skyblock_builder.config.HavenConfig;
+import net.cathienova.haven_skyblock_builder.util.CooldownManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -32,6 +33,10 @@ public class TeamManager {
 
     public static void loadAllTeams(MinecraftServer server) {
         File teamFolder = getTeamFolder(server);
+        teams.clear();
+        pendingInvites.clear();
+        inviteExpiry.clear();
+        CooldownManager.ClearCooldowns();
 
         if (!teamFolder.exists()) {
             teamFolder.mkdirs();
