@@ -20,6 +20,9 @@ public class CommonConfig {
     public final ModConfigSpec.ConfigValue<List<? extends String>> blacklistBiomesForIslands;
     public final ModConfigSpec.ConfigValue<String> overworldLayerGeneration;
     public final ModConfigSpec.ConfigValue<String> netherLayerGeneration;
+    public final ModConfigSpec.ConfigValue<List<? extends String>> worldCarvers;
+
+    private static final String RESOURCE_LOCATION_REGEX = "[a-z0-9_]+:[a-z0-9_/]+";
 
     public CommonConfig(ModConfigSpec.Builder builder) {
         builder.comment("Island Creation Height").push("island_creation_height");
@@ -158,7 +161,7 @@ public class CommonConfig {
                                 "minecraft:frozen_peaks", "minecraft:grove", "minecraft:snowy_slopes", "minecraft:windswept_hills",
                                 "minecraft:frozen_river", "minecraft:snowy_beach", "minecraft:snowy_plains", "minecraft:ice_spikes",
                                 "minecraft:badlands", "minecraft:eroded_badlands"),
-                        obj -> obj instanceof String && ((String) obj).matches("minecraft:[a-z_]+"));
+                        obj -> obj instanceof String && ((String) obj).matches(RESOURCE_LOCATION_REGEX));
         builder.pop();
 
         String overworldLayerConfig = "";
@@ -175,6 +178,13 @@ public class CommonConfig {
         netherLayerGeneration = builder
                 .comment("Defines the block layers for the Nether (can be empty), max 256 layers, format: block1,count*block2,block3")
                 .define("nether_layer_config", netherLayerConfig);
+        builder.pop();
+
+        builder.comment("World Carvers").push("world_carvers");
+        worldCarvers = builder
+                .comment("Defines the carvers for Overworld and Nether, format: minecraft:carver1,minecraft:carver2")
+                .defineList("world_carvers", List.of("minecraft:cave", "minecraft:canyon", "minecraft:minecraft:cave_extra_underground", "minecraft:nether_cave"),
+                        obj -> obj instanceof String && ((String) obj).matches(RESOURCE_LOCATION_REGEX));
         builder.pop();
     }
 }

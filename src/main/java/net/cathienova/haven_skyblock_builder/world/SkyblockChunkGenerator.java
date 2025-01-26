@@ -18,11 +18,11 @@ import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.levelgen.*;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.carver.CarvingContext;
+import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
@@ -61,12 +61,43 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     }
 
     @Override
-    public void applyCarvers(WorldGenRegion pLevel, long pSeed, RandomState pRandom, BiomeManager pBiomeManager, StructureManager pStructureManager,
-                             ChunkAccess pChunk, GenerationStep.Carving pStep)
-    {
-        if (this.generateNormal)
-        {
-            super.applyCarvers(pLevel, pSeed, pRandom, pBiomeManager, pStructureManager, pChunk, pStep);
+    public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomeManager, StructureManager structureManager,
+                             ChunkAccess chunk, GenerationStep.Carving step) {
+        if (this.generateNormal) {
+            super.applyCarvers(level, seed, random, biomeManager, structureManager, chunk, step);
+            return;
+        }
+
+        List<? extends String> carversConfig = new ArrayList<>();
+        if (inferDimension() == Level.OVERWORLD) {
+            carversConfig = HavenConfig.worldCarvers;
+        }
+        else if (inferDimension() == Level.NETHER) {
+            carversConfig = HavenConfig.worldCarvers;
+        }
+
+        if (carversConfig == null || carversConfig.isEmpty()) {
+            return;
+        }
+
+        WorldgenRandom worldgenrandom = new WorldgenRandom(new LegacyRandomSource(RandomSupport.generateUniqueSeed()));
+        ChunkPos chunkPos = chunk.getPos();
+        NoiseChunk noiseChunk = chunk.getOrCreateNoiseChunk(p -> this.createNoiseChunk(p, structureManager, Blender.of(level), random));
+        Aquifer aquifer = noiseChunk.aquifer();
+        CarvingContext carvingContext = new CarvingContext(
+                this, level.registryAccess(), chunk.getHeightAccessorForGeneration(), noiseChunk, random, this.settings.value().surfaceRule()
+        );
+        CarvingMask carvingMask = ((ProtoChunk) chunk).getOrCreateCarvingMask(step);
+
+        for (String carverId : carversConfig) {
+            ConfiguredWorldCarver<?> configuredCarver = level.registryAccess()
+                    .registryOrThrow(Registries.CONFIGURED_CARVER)
+                    .get(ResourceLocation.parse(carverId));
+
+            if (configuredCarver != null) {
+                worldgenrandom.setLargeFeatureSeed(seed, chunkPos.x, chunkPos.z);
+                configuredCarver.carve(carvingContext, chunk, biomeManager::getBiome, worldgenrandom, aquifer, chunkPos, carvingMask);
+            }
         }
     }
 

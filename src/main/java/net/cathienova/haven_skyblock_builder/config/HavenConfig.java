@@ -21,6 +21,7 @@ public class HavenConfig
     public static List<? extends String> blacklistBiomesForIslands;
     public static String overworldLayerGeneration;
     public static String netherLayerGeneration;
+    public static List<? extends String> worldCarvers;
 
     public static void bake(ModConfig config)
     {
@@ -38,5 +39,6 @@ public class HavenConfig
         blacklistBiomesForIslands = HavenSkyblockBuilder.c_config.blacklistBiomesForIslands.get();
         overworldLayerGeneration = HavenSkyblockBuilder.c_config.overworldLayerGeneration.get();
         netherLayerGeneration = HavenSkyblockBuilder.c_config.netherLayerGeneration.get();
+        worldCarvers = HavenSkyblockBuilder.c_config.worldCarvers.get();
     }
 }
