@@ -64,4 +64,9 @@ public class CooldownManager {
     public static void setVisitCooldown(ServerPlayer player) {
         setCooldown(player, "visitCooldown", HavenConfig.visitCooldown);
     }
+
+    public static void ClearCooldowns()
+    {
+        cooldowns.clear();
+    }
 }
