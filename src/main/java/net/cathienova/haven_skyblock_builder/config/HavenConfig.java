@@ -22,6 +22,7 @@ public class HavenConfig
     public static String overworldLayerGeneration;
     public static String netherLayerGeneration;
     public static List<? extends String> worldCarvers;
+    public static List<? extends String> worldPlacedFeatures;
 
     public static void bake(ModConfig config)
     {
@@ -40,5 +41,6 @@ public class HavenConfig
         overworldLayerGeneration = HavenSkyblockBuilder.c_config.overworldLayerGeneration.get();
         netherLayerGeneration = HavenSkyblockBuilder.c_config.netherLayerGeneration.get();
         worldCarvers = HavenSkyblockBuilder.c_config.worldCarvers.get();
+        worldPlacedFeatures = HavenSkyblockBuilder.c_config.worldPlacedFeatures.get();
     }
 }

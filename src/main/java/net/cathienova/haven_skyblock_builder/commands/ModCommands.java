@@ -124,8 +124,8 @@ public class ModCommands
                         .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(SkyblockUtils::adminChangeTeamName))));
         admin.then(Commands.literal("generatejsons")
-                .then(Commands.literal("structures")
-                        .executes(ModCommands::generateStructureList))
+                /*.then(Commands.literal("structures")
+                        .executes(ModCommands::generateStructureList))*/
                 .then(Commands.literal("biomes")
                         .executes(ModCommands::generateBiomeList))
                 .then(Commands.literal("features")
