@@ -25,6 +25,8 @@ import java.util.List;
 
 public class ModCommands
 {
+    static String prefix = "§6[§5Haven §2Skyblock §3Builder§6]§r ";
+
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("havensb");
@@ -159,7 +161,7 @@ public class ModCommands
 
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
             return 0;
         }
 
@@ -168,9 +170,9 @@ public class ModCommands
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(structureList, writer);
-            source.sendSuccess(() -> Component.translatable("Generated structure list to: " + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated structure list to: §2" + outputFile.getAbsolutePath()), true);
         } catch (IOException e) {
-            source.sendFailure(Component.translatable("Failed to write structure list: " + e.getMessage()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to write structure list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -190,7 +192,7 @@ public class ModCommands
 
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
             return 0;
         }
 
@@ -199,9 +201,9 @@ public class ModCommands
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(biomeList, writer);
-            source.sendSuccess(() -> Component.translatable("Generated biome list to: " + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated biome list to: §2" + outputFile.getAbsolutePath()), true);
         } catch (IOException e) {
-            source.sendFailure(Component.translatable("Failed to write biome list: " + e.getMessage()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to write biome list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -221,7 +223,7 @@ public class ModCommands
 
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
             return 0;
         }
 
@@ -230,9 +232,9 @@ public class ModCommands
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(featureList, writer);
-            source.sendSuccess(() -> Component.translatable("Generated feature list to: " + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated feature list to: §2" + outputFile.getAbsolutePath()), true);
         } catch (IOException e) {
-            source.sendFailure(Component.translatable("Failed to write feature list: " + e.getMessage()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to write feature list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -252,7 +254,7 @@ public class ModCommands
 
         File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.translatable("Failed to create directory: " + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
             return 0;
         }
 
@@ -261,9 +263,9 @@ public class ModCommands
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(carverList, writer);
-            source.sendSuccess(() -> Component.translatable("Generated carver list to: " + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated carver list to: §2" + outputFile.getAbsolutePath()), true);
         } catch (IOException e) {
-            source.sendFailure(Component.translatable("Failed to write carver list: " + e.getMessage()));
+            source.sendFailure(Component.literal(prefix + "§cFailed to write carver list: §6" + e.getMessage()));
         }
 
         return 1;
