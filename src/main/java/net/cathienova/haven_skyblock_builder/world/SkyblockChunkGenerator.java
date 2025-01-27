@@ -1,11 +1,8 @@
 package net.cathienova.haven_skyblock_builder.world;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.cathienova.haven_skyblock_builder.HavenSkyblockBuilder;
 import net.cathienova.haven_skyblock_builder.config.HavenConfig;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
@@ -14,37 +11,28 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.*;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.*;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.*;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;
 import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
-import net.minecraft.world.level.levelgen.structure.StructureStart;
-import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStructurePlacement;
-import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
-import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
-import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static net.minecraft.world.level.Level.*;
 
 public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
 {
@@ -62,8 +50,9 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
         super(biomeSource, settings);
         this.settings = settings;
         this.allowedStructureSets = allowedStructureSets;
-        this.generateNormal = (settings.is(ResourceLocation.parse("minecraft:end"))) ||
-                (settings.is(ResourceLocation.parse("minecraft:the_nether")) && !HavenConfig.enableNetherSkyblock);
+        ResourceKey<Level> dimension = inferDimension();
+        this.generateNormal = (dimension == END) ||
+                (dimension == NETHER && !HavenConfig.enableNetherSkyblock);
     }
 
     @Override
@@ -161,6 +150,10 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     @Override
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random, StructureManager manager, ChunkAccess chunk)
     {
+        if (this.generateNormal) {
+            return super.fillFromNoise(blender, random, manager, chunk);
+        }
+
         ResourceKey<Level> dimension = inferDimension();
 
         if (dimension == null)
@@ -201,15 +194,15 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
 
             if (noiseKey.equals(NoiseGeneratorSettings.OVERWORLD))
             {
-                return Level.OVERWORLD;
+                return OVERWORLD;
             }
             else if (noiseKey.equals(NoiseGeneratorSettings.NETHER))
             {
-                return Level.NETHER;
+                return NETHER;
             }
             else if (noiseKey.equals(NoiseGeneratorSettings.END))
             {
-                return Level.END;
+                return END;
             }
         }
 
@@ -379,11 +372,11 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     private List<BlockState> parseLayerConfig(ResourceKey<Level> dimension)
     {
         String config;
-        if (dimension == Level.OVERWORLD)
+        if (dimension == OVERWORLD)
         {
             config = HavenConfig.overworldLayerGeneration;
         }
-        else if (dimension == Level.NETHER)
+        else if (dimension == NETHER)
         {
             config = HavenConfig.netherLayerGeneration;
         }
