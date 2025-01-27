@@ -46,7 +46,7 @@ public class HavenSkyblockBuilder
     public HavenSkyblockBuilder(IEventBus modEventBus, ModContainer modContainer)
     {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
-        modContainer.registerConfig(ModConfig.Type.SERVER, commonSpec);
+        modContainer.registerConfig(ModConfig.Type.COMMON, commonSpec);
         ModItems.register(modEventBus);
         ModCreativeModTabs.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
