@@ -34,13 +34,13 @@ public class HavenSkyblockBuilderClient {
     public static class GameEventHandler {
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
-            if (OPEN_SKYBLOCK_SCREEN.consumeClick()) {
+            /*if (OPEN_SKYBLOCK_SCREEN.consumeClick()) {
                 Minecraft minecraft = Minecraft.getInstance();
                 Screen currentScreen = minecraft.screen;
                 if (currentScreen == null) {
                     minecraft.setScreen(new IslandScreen());
                 }
-            }
+            }*/
         }
     }
 }
