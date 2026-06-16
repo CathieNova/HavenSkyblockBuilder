@@ -12,10 +12,8 @@ import net.minecraft.server.level.ServerPlayer;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
-public class CommandSuggestions
-{
-    public static CompletableFuture<Suggestions> suggestOnlinePlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
+public class CommandSuggestions {
+    public static CompletableFuture<Suggestions> suggestOnlinePlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         return CompletableFuture.supplyAsync(() ->
         {
             context.getSource().getServer().getPlayerList().getPlayers().stream()
@@ -26,8 +24,7 @@ public class CommandSuggestions
         });
     }
 
-    public static CompletableFuture<Suggestions> suggestPlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
+    public static CompletableFuture<Suggestions> suggestPlayers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         return CompletableFuture.supplyAsync(() ->
         {
             context.getSource().getServer().getPlayerList().getPlayers().stream()
@@ -38,13 +35,11 @@ public class CommandSuggestions
         });
     }
 
-    public static CompletableFuture<Suggestions> suggestTeamMembers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException
-    {
+    public static CompletableFuture<Suggestions> suggestTeamMembers(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         ServerPlayer leader = context.getSource().getPlayerOrException();
         Team team = TeamManager.getTeamByPlayer(leader.getUUID());
 
-        if (team != null)
-        {
+        if (team != null) {
             team.getMemberNames().stream()
                     .filter(name -> name.startsWith(builder.getRemaining()))
                     .forEach(builder::suggest);
@@ -56,6 +51,7 @@ public class CommandSuggestions
     public static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         return CompletableFuture.supplyAsync(() -> {
             TeamManager.getAllTeams().stream()
+                    .filter(team -> !team.isDisbanded())
                     .map(Team::getName)
                     .filter(name -> name.toLowerCase().startsWith(builder.getRemaining().toLowerCase()))
                     .forEach(builder::suggest);
@@ -79,8 +75,7 @@ public class CommandSuggestions
         return builder.buildFuture();
     }
 
-    public static CompletableFuture<Suggestions> suggestStates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
-    {
+    public static CompletableFuture<Suggestions> suggestStates(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         builder.suggest("true");
         builder.suggest("false");
         return builder.buildFuture();

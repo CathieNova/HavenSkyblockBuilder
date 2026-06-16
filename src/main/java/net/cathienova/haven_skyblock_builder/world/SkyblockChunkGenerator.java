@@ -9,12 +9,10 @@ import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.*;
-import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Blocks;
@@ -25,55 +23,47 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;
 import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 import static net.minecraft.world.level.Level.*;
 
-public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
-{
+public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
     public static final MapCodec<SkyblockChunkGenerator> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(gen -> gen.biomeSource),
-            NoiseGeneratorSettings.CODEC.fieldOf("settings").forGetter(gen -> gen.settings),
-            TagKey.codec(Registries.STRUCTURE_SET).fieldOf("allowed_structure_sets").forGetter(gen -> gen.allowedStructureSets)
+            NoiseGeneratorSettings.CODEC.fieldOf("settings").forGetter(gen -> gen.settings)
     ).apply(inst, inst.stable(SkyblockChunkGenerator::new)));
     private final Holder<NoiseGeneratorSettings> settings;
-    private final TagKey<StructureSet> allowedStructureSets;
     private final boolean generateNormal;
 
-    public SkyblockChunkGenerator(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings, TagKey<StructureSet> allowedStructureSets)
-    {
+    public SkyblockChunkGenerator(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings) {
         super(biomeSource, settings);
         this.settings = settings;
-        this.allowedStructureSets = allowedStructureSets;
         ResourceKey<Level> dimension = inferDimension();
         this.generateNormal = (dimension == END) ||
                 (dimension == NETHER && !HavenConfig.enableNetherSkyblock);
     }
 
     @Override
-    protected MapCodec<? extends ChunkGenerator> codec()
-    {
+    protected MapCodec<? extends ChunkGenerator> codec() {
         return CODEC;
     }
 
     @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomeManager, StructureManager structureManager,
-                             ChunkAccess chunk, GenerationStep.Carving step)
-    {
-        if (this.generateNormal)
-        {
-            super.applyCarvers(level, seed, random, biomeManager, structureManager, chunk, step);
+                             ChunkAccess chunk) {
+        if (this.generateNormal) {
+            super.applyCarvers(level, seed, random, biomeManager, structureManager, chunk);
             return;
         }
 
         List<? extends String> carversConfig = HavenConfig.worldCarvers;
-        if (carversConfig == null || carversConfig.isEmpty())
-        {
+        if (carversConfig == null || carversConfig.isEmpty()) {
             return;
         }
 
@@ -84,36 +74,23 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
         CarvingContext carvingContext = new CarvingContext(
                 this, level.registryAccess(), chunk.getHeightAccessorForGeneration(), noiseChunk, random, this.settings.value().surfaceRule()
         );
-        CarvingMask carvingMask = ((ProtoChunk) chunk).getOrCreateCarvingMask(step);
+        CarvingMask carvingMask = ((ProtoChunk) chunk).getOrCreateCarvingMask();
 
         int carvingRange = 8;
-        for (int dx = -carvingRange; dx <= carvingRange; dx++)
-        {
-            for (int dz = -carvingRange; dz <= carvingRange; dz++)
-            {
-                ChunkPos targetPos = new ChunkPos(chunkPos.x + dx, chunkPos.z + dz);
-                ChunkAccess targetChunk = level.getChunk(targetPos.x, targetPos.z);
+        for (int dx = -carvingRange; dx <= carvingRange; dx++) {
+            for (int dz = -carvingRange; dz <= carvingRange; dz++) {
+                ChunkPos targetPos = new ChunkPos(chunkPos.x() + dx, chunkPos.z() + dz);
 
-                BiomeGenerationSettings biomeGenSettings = targetChunk.carverBiome(() ->
-                        this.getBiomeGenerationSettings(this.biomeSource.getNoiseBiome(
-                                QuartPos.fromBlock(targetPos.getMinBlockX()),
-                                0,
-                                QuartPos.fromBlock(targetPos.getMinBlockZ()),
-                                random.sampler()
-                        ))
-                );
-
-                for (String carverId : carversConfig)
-                {
+                for (String carverId : carversConfig) {
                     ConfiguredWorldCarver<?> configuredCarver = level.registryAccess()
-                            .registryOrThrow(Registries.CONFIGURED_CARVER)
-                            .get(ResourceLocation.parse(carverId));
+                            .lookupOrThrow(Registries.CONFIGURED_CARVER)
+                            .get(Identifier.parse(carverId))
+                            .map(Holder::value)
+                            .orElse(null);
 
-                    if (configuredCarver != null)
-                    {
-                        worldgenRandom.setLargeFeatureSeed(seed, targetPos.x, targetPos.z);
-                        if (configuredCarver.isStartChunk(worldgenRandom))
-                        {
+                    if (configuredCarver != null) {
+                        worldgenRandom.setLargeFeatureSeed(seed, targetPos.x(), targetPos.z());
+                        if (configuredCarver.isStartChunk(worldgenRandom)) {
                             configuredCarver.carve(carvingContext, chunk, biomeManager::getBiome, worldgenRandom, aquifer, targetPos, carvingMask);
                         }
                     }
@@ -123,60 +100,48 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     }
 
     @Override
-    public ChunkGeneratorStructureState createState(HolderLookup<StructureSet> lookup, RandomState pRandomState, long pSeed)
-    {
-        return this.generateNormal ? super.createState(lookup, pRandomState, pSeed) : super.createState(new FilteredLookup(lookup, this.allowedStructureSets),
-                pRandomState, pSeed);
+    public ChunkGeneratorStructureState createState(HolderLookup<StructureSet> lookup, RandomState pRandomState, long pSeed) {
+        return super.createState(lookup, pRandomState, pSeed);
     }
 
     @Override
-    public void buildSurface(WorldGenRegion pLevel, StructureManager pStructureManager, RandomState pRandom, ChunkAccess pChunk)
-    {
-        if (this.generateNormal)
-        {
+    public void buildSurface(WorldGenRegion pLevel, StructureManager pStructureManager, RandomState pRandom, ChunkAccess pChunk) {
+        if (this.generateNormal) {
             super.buildSurface(pLevel, pStructureManager, pRandom, pChunk);
         }
     }
 
     @Override
-    public void spawnOriginalMobs(WorldGenRegion pLevel)
-    {
-        if (this.generateNormal)
-        {
+    public void spawnOriginalMobs(WorldGenRegion pLevel) {
+        if (this.generateNormal) {
             super.spawnOriginalMobs(pLevel);
         }
     }
 
     @Override
-    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random, StructureManager manager, ChunkAccess chunk)
-    {
+    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random, StructureManager manager, ChunkAccess chunk) {
         if (this.generateNormal) {
             return super.fillFromNoise(blender, random, manager, chunk);
         }
 
         ResourceKey<Level> dimension = inferDimension();
 
-        if (dimension == null)
-        {
+        if (dimension == null) {
             return CompletableFuture.completedFuture(chunk);
         }
 
         List<BlockState> layers = parseLayerConfig(dimension);
-        if (layers.isEmpty())
-        {
+        if (layers.isEmpty()) {
             return CompletableFuture.completedFuture(chunk);
         }
 
-        int minY = chunk.getMinBuildHeight();
+        int minY = chunk.getMinY();
         int maxY = minY + chunk.getHeight();
 
-        for (int x = 0; x < 16; x++)
-        {
-            for (int z = 0; z < 16; z++)
-            {
-                for (int y = minY; y < maxY && y - minY < layers.size(); y++)
-                {
-                    chunk.setBlockState(new BlockPos(x, y, z), layers.get(y - minY), false);
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                for (int y = minY; y < maxY && y - minY < layers.size(); y++) {
+                    chunk.setBlockState(new BlockPos(chunk.getPos().getBlockX(x), y, chunk.getPos().getBlockZ(z)), layers.get(y - minY), 0);
                 }
             }
         }
@@ -184,24 +149,17 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
         return CompletableFuture.completedFuture(chunk);
     }
 
-    private ResourceKey<Level> inferDimension()
-    {
+    private ResourceKey<Level> inferDimension() {
         Optional<ResourceKey<NoiseGeneratorSettings>> key = settings.unwrapKey();
 
-        if (key.isPresent())
-        {
+        if (key.isPresent()) {
             ResourceKey<NoiseGeneratorSettings> noiseKey = key.get();
 
-            if (noiseKey.equals(NoiseGeneratorSettings.OVERWORLD))
-            {
+            if (noiseKey.equals(NoiseGeneratorSettings.OVERWORLD)) {
                 return OVERWORLD;
-            }
-            else if (noiseKey.equals(NoiseGeneratorSettings.NETHER))
-            {
+            } else if (noiseKey.equals(NoiseGeneratorSettings.NETHER)) {
                 return NETHER;
-            }
-            else if (noiseKey.equals(NoiseGeneratorSettings.END))
-            {
+            } else if (noiseKey.equals(NoiseGeneratorSettings.END)) {
                 return END;
             }
         }
@@ -210,52 +168,40 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     }
 
     @Override
-    public int getBaseHeight(int pX, int pZ, Heightmap.Types pType, LevelHeightAccessor pLevel, RandomState pRandom)
-    {
-        if (this.generateNormal)
-        {
+    public int getBaseHeight(int pX, int pZ, Heightmap.Types pType, LevelHeightAccessor pLevel, RandomState pRandom) {
+        if (this.generateNormal) {
             return super.getBaseHeight(pX, pZ, pType, pLevel, pRandom);
-        }
-        else
-        {
+        } else {
             return getMinY();
         }
     }
 
     @Override
-    public NoiseColumn getBaseColumn(int pX, int pZ, LevelHeightAccessor heightAccessor, RandomState pRandom)
-    {
-        if (this.generateNormal)
-        {
+    public NoiseColumn getBaseColumn(int pX, int pZ, LevelHeightAccessor heightAccessor, RandomState pRandom) {
+        if (this.generateNormal) {
             return super.getBaseColumn(pX, pZ, heightAccessor, pRandom);
         }
 
         ResourceKey<Level> dimension = inferDimension();
-        if (dimension == null)
-        {
-            return new NoiseColumn(heightAccessor.getMinBuildHeight(), new BlockState[0]);
+        if (dimension == null) {
+            return new NoiseColumn(heightAccessor.getMinY(), new BlockState[0]);
         }
 
         List<BlockState> layers = parseLayerConfig(dimension);
-        if (layers.isEmpty())
-        {
+        if (layers.isEmpty()) {
             return super.getBaseColumn(pX, pZ, heightAccessor, pRandom);
         }
 
         BlockState[] states = new BlockState[heightAccessor.getHeight()];
-        int minY = heightAccessor.getMinBuildHeight();
+        int minY = heightAccessor.getMinY();
         int maxY = minY + heightAccessor.getHeight();
 
         int currentLayer = 0;
-        for (int y = minY; y < maxY; y++)
-        {
-            if (currentLayer < layers.size())
-            {
+        for (int y = minY; y < maxY; y++) {
+            if (currentLayer < layers.size()) {
                 states[y - minY] = layers.get(currentLayer);
                 currentLayer++;
-            }
-            else
-            {
+            } else {
                 states[y - minY] = Blocks.AIR.defaultBlockState();
             }
         }
@@ -264,150 +210,117 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator
     }
 
     @Override
-    public void addDebugScreenInfo(List<String> pInfo, RandomState pRandom, BlockPos pPos)
-    {
-        if (this.generateNormal)
-        {
+    public void addDebugScreenInfo(List<String> pInfo, RandomState pRandom, BlockPos pPos) {
+        if (this.generateNormal) {
             super.addDebugScreenInfo(pInfo, pRandom, pPos);
         }
     }
 
     @Override
-    public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager)
-    {
-        if (this.generateNormal)
-        {
-            super.applyBiomeDecoration(level, chunk, structureManager);
+    public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
+        super.applyBiomeDecoration(level, chunk, structureManager);
+        if (this.generateNormal) {
             return;
         }
 
         ChunkPos chunkPos = chunk.getPos();
-        SectionPos sectionPos = SectionPos.of(chunkPos, level.getMinSection());
+        SectionPos sectionPos = SectionPos.of(chunkPos, level.getMinSectionY());
         BlockPos origin = sectionPos.origin();
         WorldgenRandom worldgenRandom = new WorldgenRandom(new XoroshiroRandomSource(RandomSupport.generateUniqueSeed()));
-        long decorationSeed = worldgenRandom.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
+        worldgenRandom.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
 
         // Retrieve placed features registry
-        Registry<PlacedFeature> placedFeatureRegistry = level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
+        Registry<PlacedFeature> placedFeatureRegistry = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE);
 
         List<? extends String> featuresConfig = HavenConfig.worldPlacedFeatures;
-        if (featuresConfig == null || featuresConfig.isEmpty())
-        {
+        if (featuresConfig == null || featuresConfig.isEmpty()) {
             return;
         }
 
-        for (String featureId : featuresConfig)
-        {
-            PlacedFeature placedFeature = placedFeatureRegistry.get(ResourceLocation.parse(featureId));
+        for (String featureId : featuresConfig) {
+            PlacedFeature placedFeature = placedFeatureRegistry.get(Identifier.parse(featureId)).map(Holder::value).orElse(null);
 
-            if (placedFeature == null)
-            {
-                HavenSkyblockBuilder.Log("Feature not found: " + featureId);
+            if (placedFeature == null) {
                 continue;
             }
 
-            try
-            {
+            try {
                 // Place feature with biome check
                 placedFeature.placeWithBiomeCheck(level, this, worldgenRandom, origin);
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 HavenSkyblockBuilder.Log("Error placing feature " + featureId + ": " + e.getMessage());
             }
         }
     }
 
     @Override
-    public void createReferences(WorldGenLevel level, StructureManager pStructureManager, ChunkAccess pChunk)
-    {
-        if (this.generateNormal || hasStructures(level.registryAccess()))
-        {
-            super.createReferences(level, pStructureManager, pChunk);
-        }
+    public void createReferences(WorldGenLevel level, StructureManager pStructureManager, ChunkAccess pChunk) {
+        super.createReferences(level, pStructureManager, pChunk);
     }
 
     @Override
     public void createStructures(RegistryAccess registries, ChunkGeneratorStructureState pStructureState, StructureManager pStructureManager,
-                                 ChunkAccess pChunk, StructureTemplateManager pStructureTemplateManager)
-    {
-        if (this.generateNormal || hasStructures(registries))
-        {
-            super.createStructures(registries, pStructureState, pStructureManager, pChunk, pStructureTemplateManager);
+                                 ChunkAccess pChunk, StructureTemplateManager pStructureTemplateManager, ResourceKey<Level> dimension) {
+        if (this.generateNormal) {
+            super.createStructures(registries, pStructureState, pStructureManager, pChunk, pStructureTemplateManager, dimension);
+            return;
         }
+
+        List<? extends String> structuresConfig = HavenConfig.worldStructures;
+        if (structuresConfig == null || structuresConfig.isEmpty()) {
+            return;
+        }
+
+        super.createStructures(registries, pStructureState, pStructureManager, pChunk, pStructureTemplateManager, dimension);
+
+        if (structuresConfig.contains("*")) {
+            return;
+        }
+
+        Set<String> allowedStructures = new HashSet<>(structuresConfig);
+        Registry<Structure> structureRegistry = registries.lookupOrThrow(Registries.STRUCTURE);
+        Map<Structure, Identifier> structureIds = new IdentityHashMap<>();
+        structureRegistry.entrySet().forEach(entry -> structureIds.put(entry.getValue(), entry.getKey().identifier()));
+
+        Map<Structure, StructureStart> filteredStarts = new HashMap<>();
+        pChunk.getAllStarts().forEach((structure, start) ->
+        {
+            Identifier structureId = structureIds.get(structure);
+            if (structureId != null && allowedStructures.contains(structureId.toString())) {
+                filteredStarts.put(structure, start);
+            }
+        });
+        pChunk.setAllStarts(filteredStarts);
     }
 
-    private boolean hasStructures(RegistryAccess registries)
-    {
-        return registries.registryOrThrow(Registries.STRUCTURE_SET).getTagOrEmpty(this.allowedStructureSets).iterator().hasNext();
-    }
-
-    private record FilteredLookup(HolderLookup<StructureSet> parent,
-                                  TagKey<StructureSet> allowedValues) implements HolderLookup<StructureSet>
-    {
-        @Override
-        public Optional<Holder.Reference<StructureSet>> get(ResourceKey<StructureSet> key)
-        {
-            return this.parent.get(key).filter(obj -> obj.is(this.allowedValues));
-        }
-
-        @Override
-        public Optional<HolderSet.Named<StructureSet>> get(TagKey<StructureSet> tagKey)
-        {
-            return this.parent.get(tagKey);
-        }
-
-        @Override
-        public Stream<Holder.Reference<StructureSet>> listElements()
-        {
-            return this.parent.listElements().filter(obj -> obj.is(this.allowedValues));
-        }
-
-        @Override
-        public Stream<HolderSet.Named<StructureSet>> listTags()
-        {
-            return this.parent.listTags();
-        }
-    }
-
-    private List<BlockState> parseLayerConfig(ResourceKey<Level> dimension)
-    {
+    private List<BlockState> parseLayerConfig(ResourceKey<Level> dimension) {
         String config;
-        if (dimension == OVERWORLD)
-        {
+        if (dimension == OVERWORLD) {
             config = HavenConfig.overworldLayerGeneration;
-        }
-        else if (dimension == NETHER)
-        {
+        } else if (dimension == NETHER) {
             config = HavenConfig.netherLayerGeneration;
-        }
-        else
-        {
+        } else {
             return new ArrayList<>();
         }
 
-        if (config == null || config.isEmpty())
-        {
+        if (config == null || config.isEmpty()) {
             return new ArrayList<>();
         }
 
         List<BlockState> layers = new ArrayList<>();
         String[] entries = config.split(",");
-        for (String entry : entries)
-        {
+        for (String entry : entries) {
             String[] parts = entry.split("\\*");
             int count = parts.length > 1 ? Integer.parseInt(parts[0]) : 1;
             BlockState blockState = Blocks.AIR.defaultBlockState();
 
-            try
-            {
-                blockState = BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), parts[parts.length - 1], false).blockState();
-            } catch (CommandSyntaxException e)
-            {
+            try {
+                blockState = BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK, parts[parts.length - 1], false).blockState();
+            } catch (CommandSyntaxException e) {
                 HavenSkyblockBuilder.Log("Failed to parse block state: " + parts[parts.length - 1]);
             }
 
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 layers.add(blockState);
             }
         }

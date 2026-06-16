@@ -44,21 +44,36 @@ public class TeamManager {
         }
 
         File[] files = teamFolder.listFiles((dir, name) -> name.endsWith(".json"));
-        if (files != null) {
-            for (File file : files) {
-                try (FileReader reader = new FileReader(file)) {
-                    Team team = GSON.fromJson(reader, Team.class);
-                    teams.put(team.getUuid(), team);
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            try (FileReader reader = new FileReader(file)) {
+                Team team = GSON.fromJson(reader, Team.class);
+                if (team == null) {
+                    continue;
                 }
+
+                team.repairMissingData(file.lastModified() > 0 ? file.lastModified() : System.currentTimeMillis());
+                if (team.isDisbanded() && HavenConfig.removeDisbandedTeams) {
+                    file.delete();
+                    continue;
+                }
+                teams.put(team.getUuid(), team);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
 
     public static void saveTeam(MinecraftServer server, Team team) {
-        File teamFolder = getTeamFolder(server);
+        if (team.isDisbanded() && HavenConfig.removeDisbandedTeams) {
+            deleteTeam(server, team.getUuid());
+            return;
+        }
 
+        File teamFolder = getTeamFolder(server);
         if (!teamFolder.exists()) {
             teamFolder.mkdirs();
         }
@@ -73,8 +88,7 @@ public class TeamManager {
 
     public static void deleteTeam(MinecraftServer server, UUID teamId) {
         teams.remove(teamId);
-        File teamFolder = getTeamFolder(server);
-        File file = new File(teamFolder, teamId + ".json");
+        File file = new File(getTeamFolder(server), teamId + ".json");
         if (file.exists()) {
             file.delete();
         }
@@ -83,10 +97,21 @@ public class TeamManager {
     public static void addTeam(MinecraftServer server, Team team) {
         teams.put(team.getUuid(), team);
         saveTeam(server, team);
+        removeJoinRequestsForPlayer(server, team.getLeader());
     }
 
     public static void removeTeam(MinecraftServer server, UUID teamId) {
         deleteTeam(server, teamId);
+    }
+
+    public static void disbandTeam(MinecraftServer server, Team team) {
+        team.clearMembers();
+        team.markDisbanded();
+        if (HavenConfig.removeDisbandedTeams) {
+            removeTeam(server, team.getUuid());
+        } else {
+            saveTeam(server, team);
+        }
     }
 
     public static Collection<Team> getAllTeams() {
@@ -95,7 +120,7 @@ public class TeamManager {
 
     public static void addPendingInvite(UUID inviteeUuid, UUID teamId) {
         pendingInvites.put(inviteeUuid, teamId);
-        inviteExpiry.put(inviteeUuid, System.currentTimeMillis() + 60 * 1000); // 60 seconds
+        inviteExpiry.put(inviteeUuid, System.currentTimeMillis() + 60 * 1000);
     }
 
     public static boolean isInviteExpired(UUID inviteeUuid) {
@@ -109,18 +134,20 @@ public class TeamManager {
     }
 
     public static UUID getPendingInvite(UUID inviteeUuid) {
-        if (pendingInvites.containsKey(inviteeUuid)) {
-            if (isInviteExpired(inviteeUuid)) {
-                removePendingInvite(inviteeUuid);
-                return null;
-            }
-            return pendingInvites.get(inviteeUuid);
+        if (!pendingInvites.containsKey(inviteeUuid)) {
+            return null;
         }
-        return null;
+
+        if (isInviteExpired(inviteeUuid)) {
+            removePendingInvite(inviteeUuid);
+            return null;
+        }
+        return pendingInvites.get(inviteeUuid);
     }
 
     public static Team getTeamByPlayer(UUID playerUuid) {
         return teams.values().stream()
+                .filter(team -> !team.isDisbanded())
                 .filter(team -> team.getMembers().stream().anyMatch(member -> member.getUuid().equals(playerUuid)))
                 .findFirst()
                 .orElse(null);
@@ -128,6 +155,29 @@ public class TeamManager {
 
     public static Team getTeamById(UUID teamId) {
         return teams.get(teamId);
+    }
+
+    public static void removeJoinRequestsForPlayer(MinecraftServer server, UUID playerUuid) {
+        for (Team team : java.util.List.copyOf(teams.values())) {
+            int requestCount = team.getJoinRequests().size();
+            team.removeJoinRequest(playerUuid);
+            if (team.getJoinRequests().size() != requestCount) {
+                saveTeam(server, team);
+            }
+        }
+    }
+
+    public static void removeInvalidJoinRequests(MinecraftServer server, Team team) {
+        boolean changed = false;
+        for (Team.JoinRequest request : java.util.List.copyOf(team.getJoinRequests())) {
+            if (getTeamByPlayer(request.getUuid()) != null) {
+                team.removeJoinRequest(request.getUuid());
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveTeam(server, team);
+        }
     }
 
     public static BlockPos findNextAvailableIslandPosition(ServerLevel level) {
@@ -142,13 +192,11 @@ public class TeamManager {
                     }
 
                     BlockPos candidate = new BlockPos(x, 70, z);
-
                     if (candidate.equals(new BlockPos(0, 70, 0))) {
                         continue;
                     }
 
-                    if (isPositionAvailable(candidate, islandDistance) &&
-                            isBiomeAllowed(level, candidate)) {
+                    if (isPositionAvailable(candidate, islandDistance) && isBiomeAllowed(level, candidate)) {
                         return candidate;
                     }
                 }
@@ -167,23 +215,8 @@ public class TeamManager {
             return false;
         }
 
-        String biomeName = biomeKey.location().toString();
+        String biomeName = biomeKey.identifier().toString();
         return !HavenConfig.blacklistBiomesForIslands.contains(biomeName);
-    }
-
-    // Helper method to check if there are blocks nearby
-    private static boolean noNearbyBlocks(ServerLevel level, BlockPos center, int radius) {
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                for (int dy = -radius; dy <= radius; dy++) {
-                    BlockPos pos = center.offset(dx, dy, dz);
-                    if (!level.isEmptyBlock(pos)) {
-                        return false; // Found a non-air block nearby
-                    }
-                }
-            }
-        }
-        return true; // No blocks found nearby
     }
 
     private static boolean isPositionAvailable(BlockPos position, int radius) {
@@ -196,5 +229,4 @@ public class TeamManager {
         double distance = Math.sqrt(pos1.distSqr(pos2));
         return distance <= radius;
     }
-
 }

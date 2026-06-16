@@ -7,8 +7,7 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-public class ModChunkGenerators
-{
+public class ModChunkGenerators {
     public static final DeferredRegister<MapCodec<? extends ChunkGenerator>> CHUNK_GENERATORS = DeferredRegister.create(
             Registries.CHUNK_GENERATOR, HavenSkyblockBuilder.MOD_ID);
 

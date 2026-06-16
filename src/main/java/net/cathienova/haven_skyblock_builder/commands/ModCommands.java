@@ -8,6 +8,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.cathienova.haven_skyblock_builder.config.HavenConfig;
 import net.cathienova.haven_skyblock_builder.team.TeamManager;
 import net.cathienova.haven_skyblock_builder.util.SkyblockUtils;
 import net.minecraft.commands.CommandSourceStack;
@@ -15,20 +16,21 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModCommands
-{
-    static String prefix = "§6[§5Haven §2Skyblock §3Builder§6]§r ";
+public class ModCommands {
+    private static final Path GENERATED_JSON_DIRECTORY = Path.of("config", "HavenSkyblockBuilder", "generatedjsons");
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
-    {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("havensb");
         command.then(Commands.literal("spawn")
                 .executes(SkyblockUtils::goSpawn));
@@ -38,14 +40,14 @@ public class ModCommands
         island.then(Commands.literal("create")
                 .executes(context ->
                 {
-                    context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_island"));
+                    context.getSource().sendFailure(HavenConfig.message("haven_skyblock_builder.island.create.missing_island"));
                     return 0;
                 })
                 .then(Commands.argument("template", StringArgumentType.word())
                         .suggests(CommandSuggestions::suggestIslandTemplates)
                         .executes(context ->
                         {
-                            context.getSource().sendFailure(Component.translatable("haven_skyblock_builder.island.create.missing_name"));
+                            context.getSource().sendFailure(HavenConfig.message("haven_skyblock_builder.island.create.missing_name"));
                             return 0;
                         })
                         .then(Commands.argument("name", StringArgumentType.greedyString())
@@ -99,7 +101,7 @@ public class ModCommands
 
         // Admin commands
         LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin");
-        admin.requires(source -> source.hasPermission(2));
+        admin.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS));
         admin.then(Commands.literal("reload")
                 .executes(ModCommands::reloadConfig));
         admin.then(Commands.literal("listteams")
@@ -126,8 +128,8 @@ public class ModCommands
                         .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(SkyblockUtils::adminChangeTeamName))));
         admin.then(Commands.literal("generatejsons")
-                /*.then(Commands.literal("structures")
-                        .executes(ModCommands::generateStructureList))*/
+                .then(Commands.literal("structures")
+                        .executes(ModCommands::generateStructureList))
                 .then(Commands.literal("biomes")
                         .executes(ModCommands::generateBiomeList))
                 .then(Commands.literal("features")
@@ -139,11 +141,10 @@ public class ModCommands
         dispatcher.register(command);
     }
 
-    private static int reloadConfig(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-    {
+    private static int reloadConfig(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         TeamManager.loadAllTeams(context.getSource().getServer());
         Player player = context.getSource().getPlayerOrException();
-        player.sendSystemMessage(Component.translatable("haven_skyblock_builder.reload"));
+        player.sendSystemMessage(HavenConfig.message("haven_skyblock_builder.reload"));
         return -1;
     }
 
@@ -152,27 +153,28 @@ public class ModCommands
         MinecraftServer server = source.getServer();
 
         List<String> structureList = new ArrayList<>();
-        server.registryAccess().registryOrThrow(Registries.STRUCTURE).entrySet().forEach(entry -> {
-            ResourceLocation key = entry.getKey().location();
+        server.registryAccess().lookupOrThrow(Registries.STRUCTURE).entrySet().forEach(entry -> {
+            Identifier key = entry.getKey().identifier();
             structureList.add(key.toString());
         });
 
         structureList.sort(String::compareToIgnoreCase);
 
-        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        File outputDir = new File(server.getServerDirectory().toFile(), GENERATED_JSON_DIRECTORY.toString());
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to create directory: §6" + GENERATED_JSON_DIRECTORY));
             return 0;
         }
 
-        File outputFile = new File(outputDir, "structures_list.json");
+        Path outputPath = GENERATED_JSON_DIRECTORY.resolve("structures_list.json");
+        File outputFile = new File(server.getServerDirectory().toFile(), outputPath.toString());
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(structureList, writer);
-            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated structure list to: §2" + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(HavenConfig.messagePrefix + "§fGenerated structure list to: §2" + outputPath), true);
         } catch (IOException e) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to write structure list: §6" + e.getMessage()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to write structure list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -183,27 +185,28 @@ public class ModCommands
         MinecraftServer server = source.getServer();
 
         List<String> biomeList = new ArrayList<>();
-        server.registryAccess().registryOrThrow(Registries.BIOME).entrySet().forEach(entry -> {
-            ResourceLocation key = entry.getKey().location();
+        server.registryAccess().lookupOrThrow(Registries.BIOME).entrySet().forEach(entry -> {
+            Identifier key = entry.getKey().identifier();
             biomeList.add(key.toString());
         });
 
         biomeList.sort(String::compareToIgnoreCase);
 
-        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        File outputDir = new File(server.getServerDirectory().toFile(), GENERATED_JSON_DIRECTORY.toString());
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to create directory: §6" + GENERATED_JSON_DIRECTORY));
             return 0;
         }
 
-        File outputFile = new File(outputDir, "biomes_list.json");
+        Path outputPath = GENERATED_JSON_DIRECTORY.resolve("biomes_list.json");
+        File outputFile = new File(server.getServerDirectory().toFile(), outputPath.toString());
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(biomeList, writer);
-            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated biome list to: §2" + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(HavenConfig.messagePrefix + "§fGenerated biome list to: §2" + outputPath), true);
         } catch (IOException e) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to write biome list: §6" + e.getMessage()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to write biome list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -214,27 +217,28 @@ public class ModCommands
         MinecraftServer server = source.getServer();
 
         List<String> featureList = new ArrayList<>();
-        server.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).entrySet().forEach(entry -> {
-            ResourceLocation key = entry.getKey().location();
+        server.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE).entrySet().forEach(entry -> {
+            Identifier key = entry.getKey().identifier();
             featureList.add(key.toString());
         });
 
         featureList.sort(String::compareToIgnoreCase);
 
-        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        File outputDir = new File(server.getServerDirectory().toFile(), GENERATED_JSON_DIRECTORY.toString());
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to create directory: §6" + GENERATED_JSON_DIRECTORY));
             return 0;
         }
 
-        File outputFile = new File(outputDir, "features_list.json");
+        Path outputPath = GENERATED_JSON_DIRECTORY.resolve("features_list.json");
+        File outputFile = new File(server.getServerDirectory().toFile(), outputPath.toString());
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(featureList, writer);
-            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated feature list to: §2" + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(HavenConfig.messagePrefix + "§fGenerated feature list to: §2" + outputPath), true);
         } catch (IOException e) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to write feature list: §6" + e.getMessage()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to write feature list: §6" + e.getMessage()));
         }
 
         return 1;
@@ -245,27 +249,28 @@ public class ModCommands
         MinecraftServer server = source.getServer();
 
         List<String> carverList = new ArrayList<>();
-        server.registryAccess().registryOrThrow(Registries.CONFIGURED_CARVER).entrySet().forEach(entry -> {
-            ResourceLocation key = entry.getKey().location();
+        server.registryAccess().lookupOrThrow(Registries.CONFIGURED_CARVER).entrySet().forEach(entry -> {
+            Identifier key = entry.getKey().identifier();
             carverList.add(key.toString());
         });
 
         carverList.sort(String::compareToIgnoreCase);
 
-        File outputDir = new File(server.getServerDirectory().toFile(), "config/HavenSkyblockBuilder/generatedjsons");
+        File outputDir = new File(server.getServerDirectory().toFile(), GENERATED_JSON_DIRECTORY.toString());
         if (!outputDir.exists() && !outputDir.mkdirs()) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to create directory: §6" + outputDir.getAbsolutePath()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to create directory: §6" + GENERATED_JSON_DIRECTORY));
             return 0;
         }
 
-        File outputFile = new File(outputDir, "carvers_list.json");
+        Path outputPath = GENERATED_JSON_DIRECTORY.resolve("carvers_list.json");
+        File outputFile = new File(server.getServerDirectory().toFile(), outputPath.toString());
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             gson.toJson(carverList, writer);
-            source.sendSuccess(() -> Component.literal(prefix + "§fGenerated carver list to: §2" + outputFile.getAbsolutePath()), true);
+            source.sendSuccess(() -> Component.literal(HavenConfig.messagePrefix + "§fGenerated carver list to: §2" + outputPath), true);
         } catch (IOException e) {
-            source.sendFailure(Component.literal(prefix + "§cFailed to write carver list: §6" + e.getMessage()));
+            source.sendFailure(Component.literal(HavenConfig.messagePrefix + "§cFailed to write carver list: §6" + e.getMessage()));
         }
 
         return 1;

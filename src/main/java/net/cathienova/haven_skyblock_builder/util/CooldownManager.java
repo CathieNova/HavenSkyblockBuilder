@@ -20,7 +20,7 @@ public class CooldownManager {
 
         if (currentTime - lastUsed < cooldownTime * 1000L) {
             long remainingTime = (cooldownTime * 1000L - (currentTime - lastUsed)) / 1000L;
-            player.sendSystemMessage(Component.translatable("haven_skyblock_builder.cooldown_message", remainingTime));
+            player.sendSystemMessage(HavenConfig.message("haven_skyblock_builder.cooldown_message", remainingTime));
             return false;
         }
         return true;
@@ -65,8 +65,7 @@ public class CooldownManager {
         setCooldown(player, "visitCooldown", HavenConfig.visitCooldown);
     }
 
-    public static void ClearCooldowns()
-    {
+    public static void ClearCooldowns() {
         cooldowns.clear();
     }
 }

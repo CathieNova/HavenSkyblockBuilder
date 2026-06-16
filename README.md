@@ -1,10 +1,10 @@
 # HavenSkyblockBuilder
 
-Haven Skyblock Builder adds tools to create, manage, and customize Skyblock islands. Features include team management, custom templates, dynamic spawns, and advanced admin controls for a better Skyblock experience.
+HavenSkyblockBuilder is a flexible and modpack-friendly skyblock builder mod. It adds a skyblock world preset, island templates, team islands, island visits, spawn islands, and full control over how islands are placed.
 
 Everything is configurable: island distance, island height, spawn position, cooldowns, Nether skyblock generation, block layers, biome blacklist, extra structures, and island spawn offsets.
 
-Whether you want a simple classic skyblock setup or a more custom world, it gives modpack devs control without forcing one fixed layout.
+Whether you want a simple classic skyblock setup or a custom modpack island system, it gives modpack devs control without forcing one fixed layout.
 
 ---
 
@@ -13,13 +13,12 @@ Whether you want a simple classic skyblock setup or a more custom world, it give
 Create a world with the **Haven Skyblock** world preset.
 
 When the world starts:
-
 * The spawn island is created
 * Default template files are copied to the config folder
 * New players without an island are sent to spawn
 * Players can create their own island from an `.nbt` template
 * Each island gets its own team
-* Team leaders can invite, kick, rename, visit-toggle, and transfer ownership
+* Team leaders can manage member permissions, invites, join requests, island settings, and ownership
 
 Players create islands with:
 
@@ -57,6 +56,8 @@ The Nether can either use skyblock generation or normal Minecraft generation dep
 
 The End uses normal generation.
 
+Vanilla and modded structures use the normal structure pipeline in skyblock dimensions and are controlled by `world_structures`.
+
 ---
 
 ## Templates
@@ -69,44 +70,16 @@ Templates are stored in:
 config/HavenSkyblockBuilder/Templates
 ```
 
-The default template is:
-
-```text
-classic_island.nbt
-```
-
-The command name is the file name without `.nbt`.
+The name is the file name without `.nbt`.
 
 ```text
 classic_island.nbt = classic_island
 ```
 
-Example:
-
-```text
-/havensb island create classic_island My Island
-```
-
 To add more templates:
 
 1. Add the `.nbt` file to `config/HavenSkyblockBuilder/Templates`
-2. Restart the server if needed
-3. Use the file name in the island create command
-
-Example files:
-
-```text
-config/HavenSkyblockBuilder/Templates/classic_island.nbt
-config/HavenSkyblockBuilder/Templates/desert_island.nbt
-config/HavenSkyblockBuilder/Templates/jungle_island.nbt
-```
-
-Example commands:
-
-```text
-/havensb island create desert_island Desert Base
-/havensb island create jungle_island Jungle Base
-```
+2. Restart the server
 
 ---
 
@@ -118,12 +91,6 @@ They are stored in:
 
 ```text
 config/HavenSkyblockBuilder/AdditionalIslands
-```
-
-Default file:
-
-```text
-additional_sand_island.nbt
 ```
 
 Additional islands are controlled in the common config.
@@ -214,6 +181,22 @@ Team data is saved per world in:
 ```text
 world/serverconfig/HavenSkyblockBuilder/Teams
 ```
+
+---
+
+## Island Screen
+
+Press `J` in-game to open the Haven Skyblock Builder screen.
+
+The screen refreshes island data when it opens and shows:
+
+* Every team as `Name - Member Count`
+* Per-team Info, Visit, and Request Join
+* A separate filters window for visits, join requests, empty teams, disbanded teams, and sorting
+* Team settings for island spawn, visits, join requests, invitations, requests, and member permissions
+* A rotatable and zoomable island template preview when creating an island
+
+Use **Home Island** to return to your team island or **Teleport to Spawn** to return to world spawn.
 
 ---
 
@@ -374,6 +357,12 @@ Removes a team and sends its members to spawn.
 Changes a team name.
 
 ```text
+/havensb admin generatejsons structures
+```
+
+Generates a vanilla and modded structure ID list.
+
+```text
 /havensb admin generatejsons biomes
 ```
 
@@ -408,6 +397,7 @@ These options affect islands, teams, teleporting, world generation, and template
 * `island_creation_height`: Height where new islands are created
 * `enable_nether_skyblock`: If false, the Nether generates normally
 * `keep_inventory_on_island_leave`: If true, players keep inventory when leaving or being removed from islands
+* `remove_disbanded_teams`: If true, disbanded team files are removed completely
 * `island_specific_offsets`: Spawn offset and look direction for each island template
 * `island_distance`: Distance between islands
 * `spawn_position`: Spawn teleport position
@@ -419,111 +409,139 @@ These options affect islands, teams, teleporting, world generation, and template
 * `blacklist_biomes_for_islands`: Biomes where islands should not be placed
 * `overworld_layer_config`: Optional Overworld block layers
 * `nether_layer_config`: Optional Nether block layers
+* `world_structures`: Structures allowed in skyblock generation
 * `world_carvers`: Carvers allowed in skyblock generation
-* `nether_placed_features`: Placed features allowed in skyblock generation
+* `world_placed_features`: Placed features allowed in skyblock generation
 
 ---
 
 ## Default Common Config
 
 ```toml
+#Island Creation Height
 [island_creation_height]
-	#The height at which islands will be created
-	#Range: 1 ~ 2147483647
-	island_creation_height = 70
+#The height at which islands will be created
+# Default: 70
+# Range: > 1
+island_creation_height = 70
 
+#Enable Nether Skyblock
 [enable_nether_skyblock]
-	#If false, it will generate regular nether.
-	enable_nether_skyblock = true
+#If false, it will generate regular nether.
+enable_nether_skyblock = true
 
+#Keep Inventory on Island Leave
 [keep_inventory_on_island_leave]
-	#If true, players will keep their inventory when leaving the island.
-	keep_inventory_on_island_leave = true
+#If true, players will keep their inventory when leaving the island.
+keep_inventory_on_island_leave = true
 
+#Island-Specific Spawn Offsets
 [island_specific_offsets]
-	#The spawn offsets and look direction for specific islands.
-	#Format: "islandName=x,y,z,lookDirection".
-	island_specific_offsets = ["classic_island=1,1,-3,-90"]
+#The spawn offsets and look direction for specific islands.
+#Format: "islandName=x,y,z,lookDirection".
+#Example: [
+#  "classic_island=0,1,0,90",  // Look east
+#  "jungle_island=5,1,-3,180" // Look south
+#]
+#
+island_specific_offsets = ["classic_island=1,1,-3,-90"]
 
+#Island Distance
 [island_distance]
-	#The distance between each island
-	#Range: 1 ~ 2147483647
-	island_distance = 8192
+#The distance between each island
+# Default: 8192
+# Range: > 1
+island_distance = 8192
 
+#World Spawn Position
 [spawn_position]
-	#The X, Y, Z coordinates of the world spawn position.
-	spawn_position = ["0", "70", "0"]
+#The X, Y, Z coordinates of the world spawn position.
+#Example: ["0", "71", "0"] (Default spawn at 0, 70, 0).
+#
+spawn_position = ["0", "70", "0"]
 
+#Additional Structures
 [additional_structures]
-	#Additional structures to spawn for each island template.
-	#Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
-	additional_structures = ["classic_island=additional_sand_island,0,0,-75"]
+#Additional structures to spawn for each island template.
+#Format: "islandTemplate=structureName,xOffset,yOffset,zOffset".
+#Examples:
+#  - None: []
+#  - One: ["classic_island=additional_sand_island,0,0,-75"]
+#  - Two: [
+#      "classic_island=additional_sand_island,0,0,-75",
+#      "classic_island=additional_jungle_island,0,0,75"
+#    ]
+#
+additional_structures = ["classic_island=additional_sand_island,0,0,-75"]
 
+#Cooldowns
 [cooldowns]
-	#Cooldown time in seconds for using the '/havensb island home' command.
-	#Range: 0 ~ 2147483647
-	home_cooldown = 30
-	#Cooldown time in seconds for using the '/havensb spawn' command.
-	#Range: 0 ~ 2147483647
-	spawn_cooldown = 5
-	#Cooldown time in seconds for creating a new island.
-	#Range: 0 ~ 2147483647
-	create_cooldown = 120
-	#Cooldown time in seconds for visiting another team's island.
-	#Range: 0 ~ 2147483647
-	visit_cooldown = 30
+#Cooldown time (in seconds) for using the '/havensb island home' command.
+# Default: 15
+# Range: > 0
+home_cooldown = 30
+#Cooldown time (in seconds) for using the '/havensb spawn' command.
+# Default: 5
+# Range: > 0
+spawn_cooldown = 5
+#Cooldown time (in seconds) for creating a new island.
+# Default: 30
+# Range: > 0
+create_cooldown = 15
+#Cooldown time (in seconds) for visiting another team's island.
+# Default: 10
+# Range: > 0
+visit_cooldown = 10
 
+#Blacklist Biomes for Islands
 [blacklist_biomes_for_islands]
-	#Biomes that are blacklisted for island generation.
-	blacklist_biomes_for_islands = [
-		"minecraft:ocean",
-		"minecraft:deep_ocean",
-		"minecraft:warm_ocean",
-		"minecraft:lukewarm_ocean",
-		"minecraft:deep_lukewarm_ocean",
-		"minecraft:cold_ocean",
-		"minecraft:deep_cold_ocean",
-		"minecraft:frozen_ocean",
-		"minecraft:deep_frozen_ocean",
-		"minecraft:jagged_peaks",
-		"minecraft:frozen_peaks",
-		"minecraft:grove",
-		"minecraft:snowy_slopes",
-		"minecraft:windswept_hills",
-		"minecraft:frozen_river",
-		"minecraft:snowy_beach",
-		"minecraft:snowy_plains",
-		"minecraft:ice_spikes",
-		"minecraft:badlands",
-		"minecraft:eroded_badlands"
-	]
+#Biomes that are blacklisted for island generation.
+blacklist_biomes_for_islands = ["minecraft:ocean", "minecraft:deep_ocean", "minecraft:warm_ocean", "minecraft:lukewarm_ocean", "minecraft:deep_lukewarm_ocean", "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean", "minecraft:jagged_peaks", "minecraft:frozen_peaks", "minecraft:grove", "minecraft:snowy_slopes", "minecraft:windswept_hills", "minecraft:frozen_river", "minecraft:snowy_beach", "minecraft:snowy_plains", "minecraft:ice_spikes", "minecraft:badlands", "minecraft:eroded_badlands"]
 
+#Overworld Layer Configuration
 [overworld_layer_config]
-	#Defines the block layers for the Overworld. Can be empty.
-	#Max 384 layers, format: block1,count*block2,block3
-	overworld_layer_config = ""
+#Defines the block layers for the Overworld (can be empty), max 384 layers, format: block1,count*block2,block3
+overworld_layer_config = ""
 
+#Nether Layer Configuration
 [nether_layer_config]
-	#Defines the block layers for the Nether. Can be empty.
-	#Max 256 layers, format: block1,count*block2,block3
-	nether_layer_config = "minecraft:bedrock,50*minecraft:lava"
+#Defines the block layers for the Nether (can be empty), max 256 layers, format: block1,count*block2,block3
+nether_layer_config = "minecraft:bedrock,50*minecraft:lava"
 
+#World Structures
+[world_structures]
+#Defines structures allowed in skyblock generation.
+#
+world_structures = [
+    "minecraft:ancient_city",
+    "minecraft:end_city",
+    "minecraft:fortress",
+    "minecraft:mineshaft",
+    "minecraft:mineshaft_mesa",
+    "minecraft:stronghold",
+    "minecraft:trail_ruins",
+    "minecraft:trial_chambers",
+]
+
+#World Carvers
 [world_carvers]
-	#Defines the carvers for Overworld and Nether.
-	world_carvers = [
-		"minecraft:cave",
-		"minecraft:canyon",
-		"minecraft:minecraft:cave_extra_underground",
-		"minecraft:nether_cave"
-	]
+#Defines the carvers for Overworld and Nether, format: "minecraft:carver1", "minecraft:carver2"
+world_carvers = [
+    "minecraft:canyon",
+    "minecraft:cave",
+    "minecraft:cave_extra_underground",
+    "minecraft:nether_cave"
+]
 
+#World Placed Features
 [world_placed_features]
-	#Defines the placed features for Overworld and Nether.
-	nether_placed_features = [
-		"minecraft:glowstone",
-		"minecraft:ore_quartz_nether",
-		"minecraft:ore_gold_nether"
-	]
+#Defines the placed features for Overworld and Nether, format: "minecraft:feature1", "minecraft:feature2"
+world_placed_features = []
+
+#Remove Disbanded Teams
+[remove_disbanded_teams]
+#If true, disbanded team files are removed completely.
+remove_disbanded_teams = true
 ```
 
 ---
@@ -572,135 +590,6 @@ This creates:
 
 ---
 
-## Config Examples
-
-### Classic Void Skyblock
-
-Use this for normal void skyblock.
-
-```toml
-[overworld_layer_config]
-overworld_layer_config = ""
-
-[enable_nether_skyblock]
-enable_nether_skyblock = true
-
-[nether_layer_config]
-nether_layer_config = "minecraft:bedrock,50*minecraft:lava"
-```
-
----
-
-### Normal Nether
-
-Use this if you want skyblock Overworld but normal Nether.
-
-```toml
-[enable_nether_skyblock]
-enable_nether_skyblock = false
-```
-
----
-
-### Closer Islands
-
-Use this if you want islands closer together.
-
-```toml
-[island_distance]
-island_distance = 2048
-```
-
-Do not lower this too much on an existing world. New islands may generate too close to old islands.
-
----
-
-### No Extra Islands
-
-Use this if you only want the main template to spawn.
-
-```toml
-[additional_structures]
-additional_structures = []
-```
-
----
-
-### Multiple Island Templates
-
-```toml
-[island_specific_offsets]
-island_specific_offsets = [
-	"classic_island=1,1,-3,-90",
-	"desert_island=0,1,0,180",
-	"jungle_island=2,1,2,90"
-]
-
-[additional_structures]
-additional_structures = [
-	"classic_island=additional_sand_island,0,0,-75",
-	"desert_island=additional_oasis_island,60,0,0",
-	"jungle_island=additional_tree_island,-60,0,0"
-]
-```
-
-Needed files:
-
-```text
-config/HavenSkyblockBuilder/Templates/classic_island.nbt
-config/HavenSkyblockBuilder/Templates/desert_island.nbt
-config/HavenSkyblockBuilder/Templates/jungle_island.nbt
-
-config/HavenSkyblockBuilder/AdditionalIslands/additional_sand_island.nbt
-config/HavenSkyblockBuilder/AdditionalIslands/additional_oasis_island.nbt
-config/HavenSkyblockBuilder/AdditionalIslands/additional_tree_island.nbt
-```
-
----
-
-## Template Example
-
-This example adds a desert island template with its own spawn position and an extra oasis island.
-
-Files:
-
-```text
-config/HavenSkyblockBuilder/Templates/desert_island.nbt
-config/HavenSkyblockBuilder/AdditionalIslands/additional_oasis_island.nbt
-```
-
-Config:
-
-```toml
-[island_specific_offsets]
-island_specific_offsets = [
-	"classic_island=1,1,-3,-90",
-	"desert_island=0,1,0,180"
-]
-
-[additional_structures]
-additional_structures = [
-	"classic_island=additional_sand_island,0,0,-75",
-	"desert_island=additional_oasis_island,50,0,0"
-]
-```
-
-Command:
-
-```text
-/havensb island create desert_island Desert Base
-```
-
-What happens:
-
-* `desert_island.nbt` is pasted as the main island
-* `additional_oasis_island.nbt` is pasted 50 blocks away on X
-* The player spawns using the desert island offset
-* A team named `Desert Base` is created
-* The player becomes team leader
-
----
-
 ## Biome Blacklist
 
 The biome blacklist stops islands from being placed in unwanted biomes.
@@ -730,6 +619,7 @@ Generate a biome list with:
 The admin JSON commands generate valid IDs from the loaded server.
 
 ```text
+/havensb admin generatejsons structures
 /havensb admin generatejsons biomes
 /havensb admin generatejsons features
 /havensb admin generatejsons carvers
@@ -740,3 +630,12 @@ Files are saved in:
 ```text
 config/HavenSkyblockBuilder/generatedjsons
 ```
+
+## Good To Know
+* Changing the world preset after world creation will not regenerate old chunks.
+* The spawn island is only pasted once per world.
+* Team data is saved per world.
+* Removing a team does not delete the island blocks.
+* Disbanded team files are removed when `remove_disbanded_teams` is enabled.
+* If `keep_inventory_on_island_leave` is false, players inventory is cleared when leaving or being removed from an island.
+* Template names are file names without `.nbt`.
