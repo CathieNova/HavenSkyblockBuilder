@@ -23,6 +23,7 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;
 import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -76,23 +77,22 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
         );
         CarvingMask carvingMask = ((ProtoChunk) chunk).getOrCreateCarvingMask();
 
+        List<ConfiguredWorldCarver<?>> configuredCarvers = new ArrayList<>();
+        Registry<ConfiguredWorldCarver<?>> carverRegistry = level.registryAccess().lookupOrThrow(Registries.CONFIGURED_CARVER);
+        for (String carverId : carversConfig) {
+            carverRegistry.get(Identifier.parse(carverId)).map(Holder::value).ifPresent(configuredCarvers::add);
+        }
+
         int carvingRange = 8;
         for (int dx = -carvingRange; dx <= carvingRange; dx++) {
             for (int dz = -carvingRange; dz <= carvingRange; dz++) {
                 ChunkPos targetPos = new ChunkPos(chunkPos.x() + dx, chunkPos.z() + dz);
 
-                for (String carverId : carversConfig) {
-                    ConfiguredWorldCarver<?> configuredCarver = level.registryAccess()
-                            .lookupOrThrow(Registries.CONFIGURED_CARVER)
-                            .get(Identifier.parse(carverId))
-                            .map(Holder::value)
-                            .orElse(null);
-
-                    if (configuredCarver != null) {
-                        worldgenRandom.setLargeFeatureSeed(seed, targetPos.x(), targetPos.z());
-                        if (configuredCarver.isStartChunk(worldgenRandom)) {
-                            configuredCarver.carve(carvingContext, chunk, biomeManager::getBiome, worldgenRandom, aquifer, targetPos, carvingMask);
-                        }
+                for (int carverIndex = 0; carverIndex < configuredCarvers.size(); carverIndex++) {
+                    ConfiguredWorldCarver<?> configuredCarver = configuredCarvers.get(carverIndex);
+                    worldgenRandom.setLargeFeatureSeed(seed + carverIndex, targetPos.x(), targetPos.z());
+                    if (configuredCarver.isStartChunk(worldgenRandom)) {
+                        configuredCarver.carve(carvingContext, chunk, biomeManager::getBiome, worldgenRandom, aquifer, targetPos, carvingMask);
                     }
                 }
             }
@@ -218,8 +218,8 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
 
     @Override
     public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
-        super.applyBiomeDecoration(level, chunk, structureManager);
         if (this.generateNormal) {
+            super.applyBiomeDecoration(level, chunk, structureManager);
             return;
         }
 
@@ -227,25 +227,48 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
         SectionPos sectionPos = SectionPos.of(chunkPos, level.getMinSectionY());
         BlockPos origin = sectionPos.origin();
         WorldgenRandom worldgenRandom = new WorldgenRandom(new XoroshiroRandomSource(RandomSupport.generateUniqueSeed()));
-        worldgenRandom.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
+        long decorationSeed = worldgenRandom.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
 
-        // Retrieve placed features registry
-        Registry<PlacedFeature> placedFeatureRegistry = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE);
+        List<? extends String> structuresConfig = HavenConfig.worldStructures;
+        if (structuresConfig != null && !structuresConfig.isEmpty()) {
+            boolean allowAllStructures = structuresConfig.contains("*");
+            Set<String> allowedStructures = new HashSet<>(structuresConfig);
+            Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            BoundingBox writableArea = new BoundingBox(
+                    chunkPos.getMinBlockX(), chunk.getMinY() + 1, chunkPos.getMinBlockZ(),
+                    chunkPos.getMinBlockX() + 15, chunk.getMinY() + chunk.getHeight() - 1, chunkPos.getMinBlockZ() + 15
+            );
+            int structureIndex = 0;
+
+            for (Map.Entry<ResourceKey<Structure>, Structure> entry : structureRegistry.entrySet()) {
+                Identifier structureId = entry.getKey().identifier();
+                if (!allowAllStructures && !allowedStructures.contains(structureId.toString())) {
+                    continue;
+                }
+
+                Structure structure = entry.getValue();
+                worldgenRandom.setFeatureSeed(decorationSeed, structureIndex++, structure.step().ordinal());
+                for (StructureStart structureStart : structureManager.startsForStructure(chunkPos, structure::equals)) {
+                    structureStart.placeInChunk(level, structureManager, this, worldgenRandom, writableArea, chunkPos);
+                }
+            }
+        }
 
         List<? extends String> featuresConfig = HavenConfig.worldPlacedFeatures;
         if (featuresConfig == null || featuresConfig.isEmpty()) {
             return;
         }
 
+        Registry<PlacedFeature> placedFeatureRegistry = level.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE);
+        int featureIndex = 0;
         for (String featureId : featuresConfig) {
             PlacedFeature placedFeature = placedFeatureRegistry.get(Identifier.parse(featureId)).map(Holder::value).orElse(null);
-
             if (placedFeature == null) {
                 continue;
             }
 
             try {
-                // Place feature with biome check
+                worldgenRandom.setFeatureSeed(decorationSeed, featureIndex++, 0);
                 placedFeature.placeWithBiomeCheck(level, this, worldgenRandom, origin);
             } catch (Exception e) {
                 HavenSkyblockBuilder.Log("Error placing feature " + featureId + ": " + e.getMessage());
@@ -255,7 +278,35 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
 
     @Override
     public void createReferences(WorldGenLevel level, StructureManager pStructureManager, ChunkAccess pChunk) {
+        if (this.generateNormal) {
+            super.createReferences(level, pStructureManager, pChunk);
+            return;
+        }
+
+        List<? extends String> structuresConfig = HavenConfig.worldStructures;
+        if (structuresConfig == null || structuresConfig.isEmpty()) {
+            pChunk.setAllReferences(new HashMap<>());
+            return;
+        }
+
         super.createReferences(level, pStructureManager, pChunk);
+        if (structuresConfig.contains("*")) {
+            return;
+        }
+
+        Set<String> allowedStructures = new HashSet<>(structuresConfig);
+        Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        Map<Structure, Identifier> structureIds = new IdentityHashMap<>();
+        structureRegistry.entrySet().forEach(entry -> structureIds.put(entry.getValue(), entry.getKey().identifier()));
+
+        Map<Structure, it.unimi.dsi.fastutil.longs.LongSet> filteredReferences = new HashMap<>();
+        pChunk.getAllReferences().forEach((structure, references) -> {
+            Identifier structureId = structureIds.get(structure);
+            if (structureId != null && allowedStructures.contains(structureId.toString())) {
+                filteredReferences.put(structure, references);
+            }
+        });
+        pChunk.setAllReferences(filteredReferences);
     }
 
     @Override
@@ -268,6 +319,7 @@ public class SkyblockChunkGenerator extends NoiseBasedChunkGenerator {
 
         List<? extends String> structuresConfig = HavenConfig.worldStructures;
         if (structuresConfig == null || structuresConfig.isEmpty()) {
+            pChunk.setAllStarts(new HashMap<>());
             return;
         }
 
